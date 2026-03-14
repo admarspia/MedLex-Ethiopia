@@ -15,7 +15,7 @@ class AuthController {
         return ['status' => 400, 'body' => ['error' => 'Password must be at least 6 characters']];
     
     return ['status' => 201, 'body' => ['message' => 'Registration successful']];
-}}
+}
     
     public function login($data) {
         if(empty($data['email']) || empty($data['password'])) 
