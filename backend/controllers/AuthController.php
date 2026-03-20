@@ -22,8 +22,14 @@ class AuthController {
             return ['status' => 400, 'body' => ['error' => 'Email and password required']];
         
         // Database login check will be written here
-        
-        return ['status' => 200, 'body' => ['message' => 'Login successful']];
+        $stmt = $this->pdo->prepare("SELECT id, name, email, password FROM users WHERE email = ?");
+        $stmt->execute([$data['email']]);
+        $user = $stmt->fetch();
+            if($user && password_verify($data['password'], $user['password'])) {
+            unset($user['password']);
+        return ['status' => 200, 'body' => ['message' => 'Login successful','user'=>$user]];
+    }
+      return ['status' => 401, 'body' => ['error' => 'Invalid email or password']];
     }
 }
 ?>
