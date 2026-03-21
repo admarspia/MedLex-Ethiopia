@@ -8,7 +8,7 @@ class Pharmacy {
     private $longitude;
     private $email;
     private $passwordHash;
-
+    private $lisence;
     // Getters
     public function getId() { return $this->id; }
     public function getName() { return $this->name; }
@@ -18,6 +18,7 @@ class Pharmacy {
     public function getLongitude() { return $this->longitude; }
     public function getEmail() { return $this->email; }
     public function getPasswordHash() { return $this->passwordHash; }
+    public function getLisence() { return $this->lisence; }
 
     // Setters
     public function setId($id) { $this->id = $id; }
@@ -28,5 +29,6 @@ class Pharmacy {
     public function setLongitude($lon) { $this->longitude = $lon; }
     public function setEmail($email) { $this->email = $email; }
     public function setPasswordHash($passwordHash) { $this->passwordHash = $passwordHash; }
+    public function setLicsence($lisence) { $this->lisence = lisence; }
 }
 ?>
