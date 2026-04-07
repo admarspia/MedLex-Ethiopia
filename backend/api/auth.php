@@ -1,10 +1,16 @@
 <?php
-$username = $_POST['username'];
-$password = $_POST['password'];
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-if($username == "admin" && $password == "1234"){
-    echo "Login successful";
-}else{
-    echo "Invalid login";
+    $username = htmlspecialchars($_POST['username']);
+    $password = htmlspecialchars($_POST['password']);
+
+    if($username === "admin" && $password === "1234"){
+        echo "Login successful";
+    } else {
+        echo "Invalid login";
+    }
+
+} else {
+    echo "Please submit the form first.";
 }
 ?>
