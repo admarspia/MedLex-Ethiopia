@@ -1,8 +1,9 @@
 public function searchMedicine($name){
-    if($name == null){
+    if(empty(trim($name))){
         return "No medicine provided";
     }
 
+    $name = htmlspecialchars(trim($name));
     return $this->formatResponse($name);
 }
 
