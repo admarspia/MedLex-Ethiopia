@@ -1,49 +1,61 @@
 <?php
 
-require_once __DIR__ . '/api/Pharmacy.php';
+require_once __DIR__ . '/api/PharmacyAPI.php';
+require_once __DIR__ . '/api/MedicineAPI.php';
+require_once __DIR__ . '/middleware/authMiddleware.php';
 
-$uri = $_SERVER['REQUEST_URI'];
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
 
-$controller = new PharmacyAPI();
+$pharmacy = new PharmacyAPI();
+$medicine = new MedicineAPI();
 
-// ROUTES
-if ($uri == '/register' && $method == 'POST') {
-    $controller->register();
+
+if ($uri === '/register' && $method === 'POST') {
+    $pharmacy->register();
 }
-elseif ($uri == '/login' && $method == 'POST') {
-    $controller->login();
+
+elseif ($uri === '/login' && $method === 'POST') {
+    $pharmacy->login();
 }
+
+elseif ($uri === '/add-medicine' && $method === 'POST') {
+    /* AuthMiddleware::handle('pharmacy'); */
+    $pharmacy->addMedicine();
+}
+
+elseif ($uri === '/remove-medicine' && $method === 'POST') {
+    AuthMiddleware::handle('pharmacy');
+    $pharmacy->removeMedicine();
+}
+
+elseif ($uri === '/get-medicines' && $method === 'GET') {
+    $pharmacy->getMedicines();
+}
+
+
+elseif ($uri === '/search-medicine' && $method === 'GET') {
+
+    $name = $_GET['name'] ?? '';
+
+    if (empty($name)) {
+        http_response_code(422);
+        echo json_encode(["status" => 422, "data" => "Missing 'name'", "name" => $name]);
+        exit;
+    }
+
+    $medicine->searchByGenericName($name);
+}
+
+elseif ($uri === '/profile' && $method === 'GET') {
+    AuthMiddleware::handle(); 
+    echo json_encode(["message" => "Profile endpoint not implemented"]);
+}
+
 else {
     http_response_code(404);
-    echo json_encode(["message" => "Route not found"]);
-}
-// Pharmacy-only: add medicines
-elseif ($uri == '/add-medicine' && $method == 'POST') {
-    AuthMiddleware::handle('pharmacy');
-    $controller->addMedicine();
-}
-
-// Pharmacy-only: check missing medicines
-elseif ($uri == '/missing-medicines' && $method == 'GET') {
-    AuthMiddleware::handle('pharmacy');
-    $controller->checkMissingMedicines();
-}
-
-// User: search medicines
-elseif ($uri == '/search-medicine' && $method == 'GET') {
-    AuthMiddleware::handle(); // any logged-in user
-    $controller->searchMedicine();
-}
-
-// User: buy medicine
-elseif ($uri == '/buy-medicine' && $method == 'POST') {
-    AuthMiddleware::handle('user');
-    $controller->buyMedicine();
-}
-
-// Get profile (both user & pharmacy)
-elseif ($uri == '/profile' && $method == 'GET') {
-    AuthMiddleware::handle();
-    $controller->getProfile();
+    echo json_encode([
+        "status" => 404,
+        "data" => "Route not found" . $uri
+    ]);
 }
