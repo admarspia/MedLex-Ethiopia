@@ -105,3 +105,24 @@ class AuthController extends BaseController {
         $stmt->execute([$email]);
         $pharmacy = $stmt->fetch(\PDO::FETCH_ASSOC);
           
+
+
+        if (!$pharmacy || !password_verify($password, $pharmacy['password'])) {
+            Response::json(401, null, "Invalid email or password");
+        }
+
+        $token = $this->generateToken($email);
+        Response::json(200, ["token" => $token, "pharmacy" => [
+            "id" => $pharmacy["id"],
+            "name" => $pharmacy["name"],
+            "email" => $pharmacy["email"]
+        ]], "Login successful");
+    }
+
+    private function generateToken($email) {
+        $token = bin2hex(random_bytes(16));
+        $stmt = $this->db->prepare("UPDATE pharmacies SET token = ? WHERE email = ?");
+        $stmt->execute([$token, $email]);
+        return $token;
+    }
+}
