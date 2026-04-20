@@ -1,0 +1,15 @@
+# Disable script execution in this directory
+Options -Indexes
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .phps .cgi .pl .py .asp .aspx .shtml
+SetHandler none
+
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|phps|cgi|pl|py|asp|aspx|shtml)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Force download for unknown types or specific extensions
+ForceType application/octet-stream
+<FilesMatch "\.(jpg|jpeg|png|gif|pdf)$">
+    ForceType inherit
+</FilesMatch>

@@ -4,7 +4,7 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const API_AUTH_URL = "http://localhost/backend/index.php";
+  const API_AUTH_URL = "http://localhost:8000";
 
   useEffect(() => {
     const token = localStorage.getItem('medlex_token');
@@ -16,25 +16,25 @@ export function AuthProvider({ children }) {
 
   const login = async (userData) => {
     try {
-      const formData = new FormData();
-      formData.append('email', userData.email);
-      formData.append('password', userData.password);
-
       const response = await fetch(`${API_AUTH_URL}/login`, {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userData.email,
+          password: userData.password
+        })
       });
       const data = await response.json();
 
-      if (data.status === 200) {
+      if (data.success) {
         localStorage.setItem('medlex_token', data.data.token);
         localStorage.setItem('medlex_email', userData.email);
         setUser({ email: userData.email, token: data.data.token });
         return { success: true };
       }
-      return { success: false, message: data.data || "Login failed. Please check your credentials." };
+      return { success: false, message: data.message || "Login failed." };
     } catch (e) {
-      return { success: false, message: "Network error. Backend might not be running on expected path." };
+      return { success: false, message: "Network error. Make sure the PHP server is running on localhost:8000" };
     }
   };
 
@@ -42,16 +42,13 @@ export function AuthProvider({ children }) {
     try {
       const formData = new FormData();
       formData.append('name', userData.name);
-      formData.append('address', userData.address);
-      formData.append('phone', userData.phone);
+      formData.append('address', userData.address || '');
+      formData.append('phone', userData.phone || '');
       formData.append('email', userData.email);
       formData.append('password', userData.password);
 
       if (userData.licenseFile) {
         formData.append('license', userData.licenseFile);
-      } else {
-        const fileBlob = new Blob(['dummy license'], { type: 'text/plain' });
-        formData.append('license', fileBlob, 'license.txt');
       }
 
       const response = await fetch(`${API_AUTH_URL}/register`, {
@@ -60,15 +57,15 @@ export function AuthProvider({ children }) {
       });
       const data = await response.json();
 
-      if (data.status === 201) {
+      if (data.success) {
         localStorage.setItem('medlex_token', data.data.token);
         localStorage.setItem('medlex_email', userData.email);
         setUser({ email: userData.email, token: data.data.token });
         return { success: true };
       }
-      return { success: false, message: data.data || "Registration failed. Validation error." };
+      return { success: false, message: data.message || "Registration failed." };
     } catch (e) {
-      return { success: false, message: "Network error. Backend might not be running on expected path." };
+      return { success: false, message: "Network error. Make sure the PHP server is running on localhost:8000" };
     }
   };
 

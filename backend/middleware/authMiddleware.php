@@ -2,7 +2,7 @@
 
 class AuthMiddleware
 {
-    public static function handle($requiredRole = null)
+    public static function handle()
     {
         if(session_status() === PHP_SESSION_NONE) {
         session_start();
@@ -25,9 +25,20 @@ class AuthMiddleware
         // Update last activity time
         $_SESSION['last_activity'] = time();
 
-        // 2. If no specific role required → allow any logged-in user
-        if ($requiredRole === null) {
-            return true;
+        try {
+            // Find pharmacy with this token
+            $stmt = $db->prepare("SELECT email FROM pharmacies WHERE token = ?");
+            $stmt->execute([$token]);
+            $email = $stmt->fetchColumn();
+
+            if (!$email) {
+                Response::json(401, null, "Unauthorized: Invalid token");
+            }
+
+            // Return 'sub' for compatibility with existing code
+            return ['sub' => $email];
+        } catch (Exception $e) {
+            Response::json(500, null, "Server Error: " . $e->getMessage());
         }
 
         // 3. Role-based access control

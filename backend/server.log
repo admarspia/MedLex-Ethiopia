@@ -1,0 +1,153 @@
+[Mon Apr 20 22:18:46 2026] PHP 8.3.6 Development Server (http://localhost:8000) started
+[Mon Apr 20 22:18:55 2026] 127.0.0.1:58722 Accepted
+[Mon Apr 20 22:18:55 2026] 127.0.0.1:58722 [200]: GET /medicines
+[Mon Apr 20 22:18:55 2026] 127.0.0.1:58722 Closing
+[Mon Apr 20 22:20:12 2026] 127.0.0.1:46802 Accepted
+[Mon Apr 20 22:20:12 2026] 127.0.0.1:46802 [200]: GET /medicines
+[Mon Apr 20 22:20:12 2026] 127.0.0.1:46802 Closing
+[Mon Apr 20 22:20:56 2026] 127.0.0.1:50302 Accepted
+[Mon Apr 20 22:20:56 2026] 127.0.0.1:50302 [200]: GET /search-medicine?name=44
+[Mon Apr 20 22:20:56 2026] 127.0.0.1:50302 Closing
+[Mon Apr 20 22:23:19 2026] 127.0.0.1:42902 Accepted
+[Mon Apr 20 22:23:19 2026] 127.0.0.1:42902 [200]: OPTIONS /login
+[Mon Apr 20 22:23:19 2026] 127.0.0.1:42902 Closing
+[Mon Apr 20 22:23:19 2026] 127.0.0.1:42914 Accepted
+[Mon Apr 20 22:23:19 2026] PHP Warning:  Undefined array key "password" in /home/as/MedLex-Ethiopia/backend/controllers/AuthController.php on line 109
+[Mon Apr 20 22:23:19 2026] 127.0.0.1:42914 [401]: POST /login
+[Mon Apr 20 22:23:19 2026] 127.0.0.1:42914 Closing
+[Mon Apr 20 22:23:22 2026] 127.0.0.1:46992 Accepted
+[Mon Apr 20 22:23:22 2026] PHP Warning:  Undefined array key "password" in /home/as/MedLex-Ethiopia/backend/controllers/AuthController.php on line 109
+[Mon Apr 20 22:23:22 2026] 127.0.0.1:46992 [401]: POST /login
+[Mon Apr 20 22:23:22 2026] 127.0.0.1:46992 Closing
+[Mon Apr 20 22:23:30 2026] 127.0.0.1:47006 Accepted
+[Mon Apr 20 22:23:30 2026] 127.0.0.1:47006 [200]: OPTIONS /login
+[Mon Apr 20 22:23:30 2026] 127.0.0.1:47006 Closing
+[Mon Apr 20 22:23:30 2026] 127.0.0.1:47020 Accepted
+[Mon Apr 20 22:23:30 2026] PHP Warning:  Undefined array key "password" in /home/as/MedLex-Ethiopia/backend/controllers/AuthController.php on line 109
+[Mon Apr 20 22:23:30 2026] 127.0.0.1:47020 [401]: POST /login
+[Mon Apr 20 22:23:30 2026] 127.0.0.1:47020 Closing
+[Mon Apr 20 22:24:31 2026] 127.0.0.1:41606 Accepted
+[Mon Apr 20 22:24:31 2026] 127.0.0.1:41606 [422]: POST /register
+[Mon Apr 20 22:24:31 2026] 127.0.0.1:41606 Closing
+[Mon Apr 20 22:24:40 2026] 127.0.0.1:35038 Accepted
+[Mon Apr 20 22:24:40 2026] 127.0.0.1:35038 [500]: POST /register
+[Mon Apr 20 22:24:40 2026] 127.0.0.1:35038 Closing
+[Mon Apr 20 22:25:45 2026] 127.0.0.1:35258 Accepted
+[Mon Apr 20 22:25:45 2026] 127.0.0.1:35258 [200]: GET /medicines
+[Mon Apr 20 22:25:45 2026] 127.0.0.1:35258 Closing
+[Mon Apr 20 22:31:03 2026] 127.0.0.1:36114 Accepted
+[Mon Apr 20 22:31:03 2026] 127.0.0.1:36114 [422]: POST /register
+[Mon Apr 20 22:31:03 2026] 127.0.0.1:36114 Closing
+[Mon Apr 20 22:35:05 2026] 127.0.0.1:60802 Accepted
+[Mon Apr 20 22:35:05 2026] 127.0.0.1:60802 [422]: POST /register
+[Mon Apr 20 22:35:05 2026] 127.0.0.1:60802 Closing
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59666 Accepted
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59666 [201]: POST /register
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59666 Closing
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59672 Accepted
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59684 Accepted
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59698 Accepted
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59672 [200]: OPTIONS /pharmacy-inventory
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59672 Closing
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59684 [200]: GET /medicines
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59684 Closing
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59698 [200]: OPTIONS /pharmacy-inventory
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59698 Closing
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59714 Accepted
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59720 Accepted
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59714 [200]: GET /pharmacy-inventory
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59714 Closing
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59720 [200]: GET /medicines
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59720 Closing
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59730 Accepted
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59730 [200]: GET /pharmacy-inventory
+[Mon Apr 20 22:36:18 2026] 127.0.0.1:59730 Closing
+[Mon Apr 20 22:40:19 2026] 127.0.0.1:50178 Accepted
+[Mon Apr 20 22:40:19 2026] 127.0.0.1:50178 [422]: POST /register
+[Mon Apr 20 22:40:19 2026] 127.0.0.1:50178 Closing
+[Mon Apr 20 22:40:36 2026] 127.0.0.1:38332 Accepted
+[Mon Apr 20 22:40:37 2026] PHP Warning:  POST Content-Length of 15729397 bytes exceeds the limit of 8388608 bytes in Unknown on line 0
+[Mon Apr 20 22:40:37 2026] 127.0.0.1:38332 [422]: POST /register
+[Mon Apr 20 22:40:37 2026] 127.0.0.1:38332 Closing
+[Mon Apr 20 22:40:59 2026] 127.0.0.1:58706 Accepted
+[Mon Apr 20 22:41:00 2026] PHP Warning:  POST Content-Length of 15729399 bytes exceeds the limit of 8388608 bytes in Unknown on line 0
+[Mon Apr 20 22:41:00 2026] 127.0.0.1:58706 [422]: POST /register
+[Mon Apr 20 22:41:00 2026] 127.0.0.1:58706 Closing
+[Mon Apr 20 22:42:17 2026] 127.0.0.1:48892 Accepted
+[Mon Apr 20 22:42:17 2026] 127.0.0.1:48892 [200]: OPTIONS /add-medicine
+[Mon Apr 20 22:42:17 2026] 127.0.0.1:48892 Closing
+[Mon Apr 20 22:42:17 2026] 127.0.0.1:48904 Accepted
+[Mon Apr 20 22:42:37 2026] 127.0.0.1:48904 [201]: POST /add-medicine
+[Mon Apr 20 22:42:37 2026] 127.0.0.1:48904 Closing
+[Mon Apr 20 22:42:37 2026] 127.0.0.1:48916 Accepted
+[Mon Apr 20 22:42:37 2026] 127.0.0.1:48916 [409]: POST /add-medicine
+[Mon Apr 20 22:42:37 2026] 127.0.0.1:48916 Closing
+[Mon Apr 20 22:42:37 2026] 127.0.0.1:47316 Accepted
+[Mon Apr 20 22:42:37 2026] 127.0.0.1:47316 [200]: OPTIONS /pharmacy-inventory
+[Mon Apr 20 22:42:37 2026] 127.0.0.1:47316 Closing
+[Mon Apr 20 22:42:37 2026] 127.0.0.1:47322 Accepted
+[Mon Apr 20 22:42:37 2026] 127.0.0.1:47322 [200]: GET /pharmacy-inventory
+[Mon Apr 20 22:42:37 2026] 127.0.0.1:47322 Closing
+[Mon Apr 20 22:46:29 2026] 127.0.0.1:37550 Accepted
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37550 [201]: POST /register
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37550 Closing
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37556 Accepted
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37556 [200]: OPTIONS /pharmacy-inventory
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37556 Closing
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37570 Accepted
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37570 [200]: GET /pharmacy-inventory
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37570 Closing
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37576 Accepted
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37578 Accepted
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37576 [200]: GET /medicines
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37576 Closing
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37578 [200]: GET /pharmacy-inventory
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37578 Closing
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37580 Accepted
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37580 [200]: GET /medicines
+[Mon Apr 20 22:46:30 2026] 127.0.0.1:37580 Closing
+[Mon Apr 20 22:50:39 2026] 127.0.0.1:37766 Accepted
+[Mon Apr 20 22:50:39 2026] 127.0.0.1:37766 [422]: POST /register
+[Mon Apr 20 22:50:39 2026] 127.0.0.1:37766 Closing
+[Mon Apr 20 22:54:48 2026] 127.0.0.1:44410 Accepted
+[Mon Apr 20 22:54:53 2026] 127.0.0.1:44410 [200]: GET /search-medicine?name=a
+[Mon Apr 20 22:54:53 2026] 127.0.0.1:44410 Closing
+[Mon Apr 20 22:54:53 2026] 127.0.0.1:44310 Accepted
+[Mon Apr 20 22:54:58 2026] 127.0.0.1:44310 [200]: GET /search-medicine?name=a
+[Mon Apr 20 22:54:58 2026] 127.0.0.1:44310 Closing
+[Mon Apr 20 22:54:58 2026] 127.0.0.1:44320 Accepted
+[Mon Apr 20 22:54:58 2026] 127.0.0.1:44320 [200]: GET /pharmacies
+[Mon Apr 20 22:54:58 2026] 127.0.0.1:44320 Closing
+[Mon Apr 20 22:54:58 2026] 127.0.0.1:44332 Accepted
+[Mon Apr 20 22:54:58 2026] 127.0.0.1:44332 [200]: GET /pharmacies
+[Mon Apr 20 22:54:58 2026] 127.0.0.1:44332 Closing
+[Mon Apr 20 22:55:06 2026] 127.0.0.1:43906 Accepted
+[Mon Apr 20 22:55:08 2026] 127.0.0.1:43906 [200]: GET /search-medicine?name=a
+[Mon Apr 20 22:55:08 2026] 127.0.0.1:43906 Closing
+[Mon Apr 20 22:55:08 2026] 127.0.0.1:43908 Accepted
+[Mon Apr 20 22:55:10 2026] 127.0.0.1:43908 [200]: GET /search-medicine?name=a
+[Mon Apr 20 22:55:10 2026] 127.0.0.1:43908 Closing
+[Mon Apr 20 22:55:13 2026] 127.0.0.1:46772 Accepted
+[Mon Apr 20 22:55:23 2026] 127.0.0.1:46772 [200]: GET /search-medicine?name=a
+[Mon Apr 20 22:55:23 2026] 127.0.0.1:46772 Closing
+[Mon Apr 20 22:55:23 2026] 127.0.0.1:53238 Accepted
+[Mon Apr 20 22:55:25 2026] 127.0.0.1:53238 [200]: GET /search-medicine?name=a
+[Mon Apr 20 22:55:25 2026] 127.0.0.1:53238 Closing
+[Mon Apr 20 22:59:46 2026] 127.0.0.1:50252 Accepted
+[Mon Apr 20 22:59:51 2026] 127.0.0.1:50252 [200]: GET /search-medicine?name=a
+[Mon Apr 20 22:59:51 2026] 127.0.0.1:50252 Closing
+[Mon Apr 20 22:59:51 2026] 127.0.0.1:50260 Accepted
+[Mon Apr 20 22:59:51 2026] 127.0.0.1:50260 [200]: GET /pharmacies
+[Mon Apr 20 22:59:51 2026] 127.0.0.1:50260 Closing
+[Mon Apr 20 22:59:51 2026] 127.0.0.1:50274 Accepted
+[Mon Apr 20 23:01:08 2026] 127.0.0.1:50274 [200]: GET /search-medicine?name=a
+[Mon Apr 20 23:01:08 2026] 127.0.0.1:50274 Closing
+[Mon Apr 20 23:01:08 2026] 127.0.0.1:50278 Accepted
+[Mon Apr 20 23:01:08 2026] 127.0.0.1:51390 Accepted
+[Mon Apr 20 23:01:08 2026] 127.0.0.1:50278 [200]: GET /pharmacies
+[Mon Apr 20 23:01:08 2026] 127.0.0.1:50278 Closing
+[Mon Apr 20 23:01:08 2026] 127.0.0.1:51402 Accepted
+[Mon Apr 20 23:01:18 2026] 127.0.0.1:51390 [200]: GET /search-medicine?name=a
+[Mon Apr 20 23:01:18 2026] 127.0.0.1:51390 Closing
+[Mon Apr 20 23:01:25 2026] 127.0.0.1:51402 [200]: GET /search-medicine?name=a
+[Mon Apr 20 23:01:25 2026] 127.0.0.1:51402 Closing
