@@ -47,6 +47,8 @@ function getConnection() {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 pharmacy_id INTEGER,
                 medicine_id INTEGER,
+                count INTEGER,
+                price DOUBLE,
                 image_path TEXT,
                 FOREIGN KEY (pharmacy_id) REFERENCES pharmacies(id),
                 FOREIGN KEY (medicine_id) REFERENCES medicines(id)
