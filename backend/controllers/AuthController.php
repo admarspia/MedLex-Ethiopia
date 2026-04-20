@@ -71,3 +71,37 @@ class AuthController extends BaseController {
         }
 
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+      try {
+            $stmt = $this->db->prepare("INSERT INTO pharmacies (name, email, password, address, phone, license_path) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$name, $email, $passwordHash, $address, $phone, $licensePath]);
+            
+            $token = $this->generateToken($email);
+            Response::json(201, ["token" => $token], "Registration successful");
+        } catch (\PDOException $e) {
+            Response::json(500, null, "Server error during registration: " . $e->getMessage());
+        }
+    }
+
+    public function list() {
+        try {
+            $stmt = $this->db->prepare("SELECT id, name, address, phone, email, license_path FROM pharmacies");
+            $stmt->execute();
+            $pharmacies = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            Response::json(200, $pharmacies);
+        } catch (\PDOException $e) {
+            Response::json(500, null, $e->getMessage());
+        }
+    }
+
+    public function login() {
+        $email = filter_var(trim($this->input('email', '')), FILTER_SANITIZE_EMAIL);
+        $password = $this->input('password', '');
+
+        if (empty($email) || empty($password)) {
+            Response::json(422, null, "Email and password are required");
+        }
+
+        $stmt = $this->db->prepare("SELECT * FROM pharmacies WHERE email = ?");
+        $stmt->execute([$email]);
+        $pharmacy = $stmt->fetch(\PDO::FETCH_ASSOC);
+          
