@@ -1,18 +1,14 @@
-import { Link } from 'react-router-dom';
+import { MapPin } from 'lucide-react';
 
 function PharmacyCard({ pharmacy }) {
     return (
-        <div className="card">
-            <h3 className="card-title">{pharmacy.name}</h3>
-            <p className="card-subtitle">{pharmacy.location}</p>
-            <div className="card-content">
-                <p><strong>Contact:</strong> {pharmacy.contact}</p>
+        <div className="card animate-in">
+            <div style={{ color: 'var(--color-primary)', marginBottom: '1rem' }}>
+                <MapPin size={28} />
             </div>
-            <div style={{ marginTop: '1.5rem' }}>
-                <Link to="/medicines" className="btn btn-outline" style={{ display: 'block', textAlign: 'center' }}>
-                    View Medicines
-                </Link>
-            </div>
+            <h3 style={{ fontSize: '1.25rem' }}>{pharmacy.name}</h3>
+            <p style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>{pharmacy.location || pharmacy.address}</p>
+            <p style={{ color: 'var(--color-primary)', fontWeight: '700', fontSize: '0.85rem' }}>{pharmacy.contact || pharmacy.phone}</p>
         </div>
     );
 }

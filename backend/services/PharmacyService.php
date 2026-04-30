@@ -42,7 +42,6 @@ class PharmacyService {
         }
     }
 
-
     public function findByEmail($email) {
         try {
             $stmt = $this->conn->prepare(
@@ -142,7 +141,18 @@ class PharmacyService {
         }
     }
 
-    
+
+    public function getPharmacies(){
+      try {
+        $stmt = $this->conn->prepare("SELECT * from pharmacies");
+        $stmt->execute();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return ["status"=>"ok", "data"=>$result];
+      }catch(PDOException $e){
+        return ["status"=>"error","message"=>$e->getMessage()];
+      }
+    }
+
     public function getMedicines($pharmacyId) {
         try {
             $stmt = $this->conn->prepare(

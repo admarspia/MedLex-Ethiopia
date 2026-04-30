@@ -55,7 +55,7 @@ class MedicineAPI {
             ]];
     }
 
-    public function searchByGenericName($generic_name) {
+     public function searchByGenericName($generic_name) {
       $result = $this->getByGenericName($generic_name);
       return $this->response($result["status"], $result["data"]);
     }
@@ -89,8 +89,7 @@ class MedicineAPI {
     private function response($status, $data) {
         http_response_code($status);
         header('Content-Type: application/json');
-
-        echo json_encode([
+         echo json_encode([
             "status" => $status,
             "data" => $data
         ]);

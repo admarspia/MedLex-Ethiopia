@@ -1,271 +1,258 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Store, LogOut, PackageSearch, Plus, Activity, RefreshCw, X, Save } from 'lucide-react';
-
-// Mock dashboard data, fallback if backend is down
-const initialInventory = [
-    { med_id: 1, generic_name: 'Paracetamol', brand_names: 'Panadol', stock_status: 'available', price: '45.00' },
-    { med_id: 2, generic_name: 'Amoxicillin', brand_names: 'Amoxil', stock_status: 'low_stock', price: '50.00' }
-];
+import { Store, LogOut, Activity, Plus, Trash2, X, AlertCircle } from 'lucide-react';
+import { getPharmacyInventory } from '../services/pharmacyService';
+import { addMedicineToStock, removeMedicineFromStock, updateMedicineStock } from '../services/medicineService';
 
 export default function PharmacyDashboard() {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
-    const [inventory, setInventory] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [allMedicines, setAllMedicines] = useState([]);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [inventory, setInventory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedMedId, setSelectedMedId] = useState(null);
+  const [allMedicines, setAllMedicines] = useState([]);
+  const [pharmacyId, setPharmacyId] = useState(0);
 
-    // Form State
-    const [editMode, setEditMode] = useState(false);
-    const [formData, setFormData] = useState({
-        medicine_id: '',
-        stock_status: 'available',
-        price: ''
-    });
+  const [formData, setFormData] = useState({
+    generic_name: '',
+    count: '',
+    price: ''
+  });
+  useEffect(() => {
+    const checkSession = async () => {
+      if (!user) {
+        console.log("user not found");
 
-    useEffect(() => {
-        if (!user) {
-            navigate('/login');
-            return;
-        }
-        fetchInventory();
-        fetchAllMedicines();
-    }, [user, navigate]);
+        navigate('/login');
+        return;
+      }
 
-    const fetchInventory = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch(`http://localhost:8000/api/pharmacy_inventory.php?pharmacy_id=${user.pharmacy_id}`);
-            const output = await res.json();
-            if (output.status === 'success') {
-                setInventory(output.data);
-            } else {
-                throw new Error('Failed to fetch inventory');
-            }
-        } catch (err) {
-            setInventory(initialInventory); // Fallback
-        } finally {
-            setLoading(false);
-        }
-    };
+      console.log("user has logged in");
 
-    const fetchAllMedicines = async () => {
-        try {
-            const res = await fetch(`http://localhost:8000/api/medicines.php`);
-            const output = await res.json();
-            if (output.status === 'success') {
-                setAllMedicines(output.data);
-            }
-        } catch (err) {
-            setAllMedicines([{ id: 1, generic_name: 'Paracetamol' }, { id: 2, generic_name: 'Amoxicillin' }, { id: 3, generic_name: 'Ibuprofen' }]); // Fallback
-        }
-    };
-
-    if (!user) return null;
-
-    const handleLogout = () => {
-        logout();
-        navigate('/');
-    };
-
-    const getStatusBadgeColor = (status) => {
-        if (status === 'available') return 'badge-green';
-        if (status === 'low_stock') return 'badge-red';
-        return 'badge-red';
-    };
-
-    const openAddModal = () => {
-        setEditMode(false);
-        setFormData({ medicine_id: '', stock_status: 'available', price: '' });
-        setIsModalOpen(true);
-    };
-
-    const openEditModal = (item) => {
-        setEditMode(true);
-        setFormData({
-            medicine_id: item.med_id,
-            stock_status: item.stock_status,
-            price: item.price
+      try {
+        const res = await fetch("http://localhost:8000/get-session", {
+          credentials: "include"
         });
-        setIsModalOpen(true);
-    };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const res = await fetch('http://localhost:8000/api/pharmacy_inventory.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    pharmacy_id: user.pharmacy_id,
-                    ...formData
-                })
-            });
-            const output = await res.json();
-            if (output.status === 'success') {
-                setIsModalOpen(false);
-                fetchInventory(); // Refresh
-            }
-        } catch (err) {
-            // Simulate frontend update for mock mode
-            const medInfo = allMedicines.find(m => m.id == formData.medicine_id);
-            const newItem = {
-                med_id: formData.medicine_id,
-                generic_name: medInfo ? medInfo.generic_name : 'Unknown',
-                brand_names: medInfo ? medInfo.brand_names : '-',
-                stock_status: formData.stock_status,
-                price: formData.price
-            };
+        const result = await res.json();
 
-            let newInventory = [...inventory];
-            const existingIdx = newInventory.findIndex(i => i.med_id == formData.medicine_id);
+        console.log(result);
 
-            if (existingIdx >= 0) {
-                newInventory[existingIdx] = newItem; // Update
-            } else {
-                newInventory.push(newItem); // Add
-            }
+        if (result.status == 200) {
+          setPharmacyId(result.data);
+          console.log("pharmacy_id:", pharmacyId, result.status);
 
-            setInventory(newInventory);
-            setIsModalOpen(false);
+        } else {
+          navigate('/login');
         }
+
+      } catch (err) {
+        console.error("Session check failed:", err);
+        navigate('/login');
+      }
     };
 
-    return (
-        <div className="container animate-in" style={{ padding: '3rem 1.5rem' }}>
+    checkSession();
+  }, [user, navigate]);
 
-            {/* Dashboard Header */}
-            <div className="glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '3rem', padding: '1.5rem 2.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
-                        <Store size={24} />
-                    </div>
-                    <div>
-                        <h1 style={{ fontSize: '1.5rem', margin: 0 }}>{user.name || 'Your Pharmacy'}</h1>
-                        <p style={{ color: 'var(--color-primary-light)', fontSize: '0.9rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Activity size={14} /> Active Session
-                        </p>
-                    </div>
-                </div>
-                <button onClick={handleLogout} className="btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 600 }}>
-                    <LogOut size={16} /> Sign Out
-                </button>
+  const fetchAllMedicines = async (pharmacyId) => {
+    try {
+      const result = await getPharmacyInventory(pharmacyId);
+      if (result.status == 200) {
+        setInventory(result.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch medicines', err);
+    }
+  };
+  fetchAllMedicines(pharmacyId);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const openAddModal = () => {
+    setEditMode(false);
+    setSelectedMedId(null);
+    setFormData({ generic_name: '', count: '', price: '' });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (item) => {
+    setEditMode(true);
+    setSelectedMedId(item.med_id);
+    setFormData({
+      generic_name: item.generic_name,
+      count: item.count,
+      price: item.price,
+      image: null
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    let result;
+    if (editMode) {
+      result = await updateMedicineStock(selectedMedId, formData.count, formData.price, user.token);
+    } else {
+      const submitData = new FormData();
+      submitData.append('generic_name', formData.generic_name);
+      submitData.append('count', formData.count);
+      submitData.append('price', formData.price);
+      submitData.append('image', formData.image); // <-- add this
+      result = await addMedicineToStock(submitData, user.token);
+    }
+
+    if (result.status == 200) {
+      setIsModalOpen(false);
+    } else {
+      alert(result.message || "Operation failed");
+    }
+  };
+
+  const handleRemove = async (medId) => {
+    if (!confirm("Confirm removal? This will remove the medicine from your public stock list.")) return;
+    const result = await removeMedicineFromStock(medId, user.token);
+    if (result.success) {
+      fetchInventory();
+    }
+  };
+
+  if (!user) return null;
+
+  return (
+    <div className="container animate-in" style={{ padding: '4rem 0' }}>
+      <div className="glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4rem', padding: '2rem 3rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+            <Store size={28} />
+          </div>
+          <div>
+            <h1 style={{ fontSize: '1.8rem', marginBottom: '0.2rem' }}>{user.email.split('@')[0]}</h1>
+            <p style={{ color: 'var(--color-primary)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Authorized Pharmacy Portal
+            </p>
+          </div>
+        </div>
+        <button onClick={handleLogout} className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+          <LogOut size={16} /> Logout
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
+        <div>
+          <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Inventory <span>Stock</span></h2>
+          <p style={{ color: 'var(--text-muted)' }}>Manage your medication availability and pricing</p>
+        </div>
+        <button onClick={openAddModal} className="btn btn-primary" style={{ padding: '1rem 2rem' }}>
+          <Plus size={20} /> Add New Medicine
+        </button>
+      </div>
+
+      <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
+        <table style={{ minWidth: '100%' }}>
+          <thead>
+            <tr style={{ background: '#000', color: '#fff' }}>
+              <th style={{ color: '#fff', border: 'none' }}>Medicine Name</th>
+              <th style={{ color: '#fff', border: 'none' }}>Brand</th>
+              <th style={{ color: '#fff', border: 'none' }}>Stock</th>
+              <th style={{ color: '#fff', border: 'none' }}>Price (ETB)</th>
+              <th style={{ color: '#fff', border: 'none' }}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {inventory.map((item, index) => (
+              <tr key={index}>
+                <td style={{ fontWeight: 700 }}>{item.generic_name}</td>
+                <td>{item.brand_name || '-'}</td>
+                <td style={{ fontWeight: 600 }}>{item.count} units</td>
+                <td style={{ fontWeight: 800, color: 'var(--color-primary)' }}>{item.price}</td>
+                <td>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={() => openEditModal(item)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', padding: '0.5rem' }}>
+                      <Plus size={18} style={{ transform: 'rotate(45deg)' }} /> {/* Using a Plus rotated as an X, but let's use a real pencil if I had one, oh wait I can use 'Activity' or just text */}
+                      Edit
+                    </button>
+                    <button onClick={() => handleRemove(item.med_id)} style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: '0.5rem' }}>
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {inventory.length === 0 && !loading && (
+              <tr>
+                <td colSpan="5" style={{ padding: '6rem', textAlign: 'center' }}>
+                  <Activity size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                  <p style={{ color: 'var(--text-muted)' }}>No medicines currently in stock. Add one to get started.</p>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {isModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '1rem' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', background: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h2 style={{ fontSize: '1.5rem' }}>{editMode ? 'Update Stock' : 'Add Medicine'}</h2>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h2 style={{ fontSize: '1.8rem' }}>Inventory Status</h2>
-                <button onClick={openAddModal} className="btn btn-primary" style={{ padding: '0.75rem 1.5rem', fontSize: '0.9rem' }}>
-                    <Plus size={18} /> Add New Medicine
-                </button>
-            </div>
-
-            <div className="card" style={{ padding: '0', overflow: 'hidden', position: 'relative' }}>
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.02)' }}>
-                                <th style={{ padding: '1.25rem 1.5rem', color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.9rem' }}>Medicine Name</th>
-                                <th style={{ padding: '1.25rem 1.5rem', color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.9rem' }}>Brand</th>
-                                <th style={{ padding: '1.25rem 1.5rem', color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.9rem' }}>Stock Status</th>
-                                <th style={{ padding: '1.25rem 1.5rem', color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.9rem' }}>Price (Birr)</th>
-                                <th style={{ padding: '1.25rem 1.5rem', color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.9rem', textAlign: 'right' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {inventory.map((item, index) => (
-                                <tr key={index} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', transition: 'background 0.2s' }} className="hover-bg-dark">
-                                    <td style={{ padding: '1.25rem 1.5rem', fontWeight: 600, color: 'white' }}>{item.generic_name}</td>
-                                    <td style={{ padding: '1.25rem 1.5rem', color: 'var(--text-muted)' }}>{item.brand_names || '-'}</td>
-                                    <td style={{ padding: '1.25rem 1.5rem' }}>
-                                        <span className={`badge ${getStatusBadgeColor(item.stock_status)}`}>
-                                            {item.stock_status.replace('_', ' ')}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1.5rem', color: 'var(--text-main)', fontWeight: 600 }}>{item.price}</td>
-                                    <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
-                                        <button onClick={() => openEditModal(item)} style={{ background: 'transparent', border: '1px solid rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '8px', color: 'var(--text-main)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                                            <RefreshCw size={16} /> Edit
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {inventory.length === 0 && !loading && (
-                                <tr>
-                                    <td colSpan="5" style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                        <PackageSearch size={48} style={{ opacity: 0.3, marginBottom: '1rem', display: 'block', margin: '0 auto' }} />
-                                        No inventory found. Start adding medicines to appear in searches.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Adding/Editing Modal */}
-            {isModalOpen && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
-                    <div className="card animate-in" style={{ width: '100%', maxWidth: '500px', position: 'relative' }}>
-                        <button onClick={() => setIsModalOpen(false)} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                            <X size={24} />
-                        </button>
-                        <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>{editMode ? 'Update Medicine' : 'Add New Medicine'}</h2>
-
-                        <form onSubmit={handleSubmit}>
-                            <div style={{ marginBottom: '1.25rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Select Medicine</label>
-                                <select
-                                    className="search-input"
-                                    value={formData.medicine_id}
-                                    onChange={(e) => setFormData({ ...formData, medicine_id: e.target.value })}
-                                    required
-                                    disabled={editMode}
-                                    style={{ width: '100%', padding: '1rem', appearance: 'auto', background: 'rgba(0,0,0,0.03)' }}
-                                >
-                                    <option value="" disabled>-- Select a medicine from system --</option>
-                                    {allMedicines.map(m => (
-                                        <option key={m.id} value={m.id} style={{ color: 'black' }}>{m.generic_name}</option>
-                                    ))}
-                                </select>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Medicine Generic Name</label>
+                <input
+                  list="med-suggestions"
+                  className="search-input"
+                  value={formData.generic_name}
+                  onChange={(e) => setFormData({ ...formData, generic_name: e.target.value })}
+                  required
+                  disabled={editMode}
+                />
+                <datalist id="med-suggestions">
+                  {allMedicines.map(m => <option key={m.id} value={m.generic_name} />)}
+                </datalist>
+                {editMode && <p style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.4rem' }}>Generic name cannot be changed during update.</p>}
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                  Medicine Image
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="search-input"
+                  onChange={(e) =>
+                    setFormData({ ...formData, image: e.target.files[0] })
+                  }
+                  required={!editMode}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Quantity</label>
+                                    <input type="number" className="search-input" value={formData.count} onChange={(e) => setFormData({ ...formData, count: e.target.value })} required />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Unit Price</label>
+                                    <input type="number" step="0.01" className="search-input" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required />
+                                </div>
                             </div>
 
-                            <div style={{ marginBottom: '1.25rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Stock Status</label>
-                                <select
-                                    className="search-input"
-                                    value={formData.stock_status}
-                                    onChange={(e) => setFormData({ ...formData, stock_status: e.target.value })}
-                                    required
-                                    style={{ width: '100%', padding: '1rem', appearance: 'auto', background: 'rgba(0,0,0,0.03)' }}
-                                >
-                                    <option value="available" style={{ color: 'black' }}>Available</option>
-                                    <option value="low_stock" style={{ color: 'black' }}>Low Stock</option>
-                                    <option value="out_of_stock" style={{ color: 'black' }}>Out of Stock</option>
-                                </select>
+                            <div style={{ background: 'var(--color-primary-light)', padding: '1rem', borderRadius: '8px', display: 'flex', gap: '0.75rem', alignItems: 'center', color: 'var(--color-primary)', fontSize: '0.8rem' }}>
+                                <AlertCircle size={20} />
+                                <p>{editMode ? "Updates will reflect immediately in the discovery search results." : "This medication will be visible to all users in the discovery network."}</p>
                             </div>
-
-                            <div style={{ marginBottom: '2rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Price (Birr)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    className="search-input"
-                                    placeholder="e.g. 50.00"
-                                    value={formData.price}
-                                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                    required
-                                    style={{ width: '100%', padding: '1rem' }}
-                                />
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-outline" style={{ display: 'inline-flex', padding: '0.8rem 1.5rem', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-                                <button type="submit" className="btn btn-primary" style={{ padding: '0.8rem 1.5rem', fontSize: '1rem' }}>
-                                    <Save size={18} /> {editMode ? 'Save Changes' : 'Add to Inventory'}
-                                </button>
-                            </div>
+                            <button type="submit" className="btn btn-primary" style={{ height: '3.5rem' }}>
+                                {editMode ? 'Confirm Update' : 'Add to Official Stock'}
+                            </button>
                         </form>
                     </div>
                 </div>

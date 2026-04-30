@@ -1,4 +1,16 @@
 <?php
+session_start();
+error_log(session_id());
+header("Access-Control-Allow-Origin: http://localhost:5173");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 
 require_once __DIR__ . '/api/PharmacyAPI.php';
 require_once __DIR__ . '/api/MedicineAPI.php';
@@ -25,13 +37,23 @@ elseif ($uri === '/add-medicine' && $method === 'POST') {
 }
 
 elseif ($uri === '/remove-medicine' && $method === 'POST') {
-    AuthMiddleware::handle('pharmacy');
+    /* AuthMiddleware::handle('pharmacy'); */
     $pharmacy->removeMedicine();
 }
 
 elseif ($uri === '/get-medicines' && $method === 'GET') {
     $pharmacy->getMedicines();
 }
+
+elseif ($uri === '/get-session' && $method === 'GET') {
+    $pharmacy->getSession();
+}
+
+
+elseif ($uri === '/get-pharmacies' && $method === 'GET') {
+    $pharmacy->getPharmacies();
+}
+
 
 
 elseif ($uri === '/search-medicine' && $method === 'GET') {

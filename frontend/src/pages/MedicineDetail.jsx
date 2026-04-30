@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapPin, Info, AlertTriangle, CheckCircle, Loader, ArrowLeft } from 'lucide-react';
+import { MapPin, Info, AlertTriangle, CheckCircle, Loader, ArrowLeft, Pill } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function MedicineDetail() {
@@ -13,10 +13,9 @@ export default function MedicineDetail() {
         const fetchMedicine = async () => {
             try {
                 setLoading(true);
-                const res = await fetch(`http://localhost:8000/api/medicines.php?id=${id}`);
-                const output = await res.json();
-                if (output.status === 'success') {
-                    setMedicine(output.data);
+                const result = await getMedicineById(id);
+                if (result.success) {
+                    setMedicine(result.data);
                 } else {
                     throw new Error('Not found');
                 }
@@ -39,71 +38,109 @@ export default function MedicineDetail() {
         fetchMedicine();
     }, [id]);
 
-    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '6rem' }}><Loader size={48} className="spinner" style={{ animation: 'spin 1s linear infinite', color: 'var(--color-primary)' }} /></div>;
-    if (!medicine) return <div className="container" style={{ padding: '4rem 1.5rem', textAlign: 'center' }}><h2>Medicine not found</h2></div>;
+    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}><Loader size={48} className="spinner" style={{ animation: 'spin 1s linear infinite', color: 'var(--color-primary)' }} /></div>;
+    if (!medicine) return <div className="container" style={{ padding: '10rem 1.5rem', textAlign: 'center' }}><h2>Profile Unavailable</h2><Link to="/medicines" className="btn btn-primary" style={{ marginTop: '2rem' }}>Back to Search</Link></div>;
 
     return (
-        <div className="container" style={{ padding: '2rem 1.5rem' }}>
-            <Link to="/medicines" className="animate-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                <ArrowLeft size={18} /> {t('btn_back')}
+        <div className="container animate-in" style={{ padding: '4rem 1.5rem' }}>
+            <Link to="/medicines" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '3rem', color: 'var(--text-muted)', fontWeight: 800, textDecoration: 'none', transition: 'var(--transition)' }} className="hover-red">
+                <ArrowLeft size={18} /> BACK TO DATABASE
             </Link>
 
-            <div className="glass-panel animate-in delay-1" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '2rem', marginBottom: '3rem' }}>
+            <div className="glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem', marginBottom: '3rem', padding: '3rem' }}>
                 <div>
-                    <span className="badge badge-red" style={{ marginBottom: '1.5rem' }}>{t('med_profile_badge')}</span>
-                    <h1 style={{ fontSize: '3rem', margin: '0 0 0.5rem 0', letterSpacing: '-0.03em' }}>{medicine.generic_name}</h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem' }}>{t('med_also_known')} <strong style={{ color: 'var(--text-main)' }}>{medicine.brand_names || 'N/A'}</strong></p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--color-primary)', marginBottom: '1.5rem' }}>
+                        <Pill size={32} /> <span className="badge badge-red">Verified Medication</span>
+                    </div>
+                    <h1 style={{ fontSize: '4rem', margin: '0 0 1rem 0', letterSpacing: '-0.04em' }}>{medicine.generic_name}</h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem' }}>Alternative Brands: <strong style={{ color: '#000' }}>{medicine.brand_names || 'N/A'}</strong></p>
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
-                <div className="card animate-in delay-2">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', color: 'var(--color-primary-light)' }}>
-                        <Info size={28} /> <h3 style={{ margin: 0, fontSize: '1.5rem' }}>{t('med_desc_usage')}</h3>
+            <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}>
+                <div className="card">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem', color: '#000' }}>
+                        <Info size={28} /> <h3 style={{ textTransform: 'uppercase', fontSize: '1.2rem', letterSpacing: '0.05em' }}>Description</h3>
                     </div>
-                    <p className="card-content" style={{ fontSize: '1.1rem', whiteSpace: 'pre-line', color: 'var(--text-main)', opacity: 0.9 }}>
+                    <p style={{ fontSize: '1.1rem', lineHeight: '1.8', color: 'rgba(0,0,0,0.8)' }}>
                         {lang === 'am' && medicine.description_am ? medicine.description_am : medicine.description}
-                        <br /><br />
-                        <strong style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('med_usage_rules')}</strong><br />
-                        {lang === 'am' && medicine.usage_guidelines_am ? medicine.usage_guidelines_am : (medicine.usage_guidelines || 'Consult your doctor.')}
+                    </p>
+                    <div style={{ marginTop: '2rem', padding: '1.5rem', background: 'rgba(0,0,0,0.02)', borderRadius: '12px' }}>
+                        <p style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Usage Rules</p>
+                        <p style={{ fontSize: '1rem' }}>{lang === 'am' && medicine.usage_guidelines_am ? medicine.usage_guidelines_am : (medicine.usage_guidelines || 'Consult medical professional.')}</p>
+                    </div>
+                </div>
+
+                <div className="card">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem', color: '#000' }}>
+                        <CheckCircle size={28} /> <h3 style={{ textTransform: 'uppercase', fontSize: '1.2rem', letterSpacing: '0.05em' }}>Clinical Dosage</h3>
+                    </div>
+                    <p style={{ fontSize: '1.1rem', lineHeight: '1.8', color: 'rgba(0,0,0,0.8)' }}>
+                        {lang === 'am' && medicine.dosage_am ? medicine.dosage_am : (medicine.dosage || 'Follow prescribed clinical dosage.')}
                     </p>
                 </div>
 
-                <div className="card animate-in delay-3">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', color: 'var(--color-success)' }}>
-                        <CheckCircle size={28} /> <h3 style={{ margin: 0, fontSize: '1.5rem' }}>{t('med_dosage')}</h3>
+                <div className="card" style={{ gridColumn: '1 / -1', border: '2px solid #000' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem', color: 'var(--color-primary)' }}>
+                        <AlertTriangle size={32} /> <h3 style={{ textTransform: 'uppercase', fontSize: '1.5rem', letterSpacing: '0.05em' }}>Safety & Warnings</h3>
                     </div>
-                    <p className="card-content" style={{ fontSize: '1.1rem', whiteSpace: 'pre-line', color: 'var(--text-main)', opacity: 0.9 }}>
-                        {lang === 'am' && medicine.dosage_am ? medicine.dosage_am : (medicine.dosage || 'Follow prescribed dosage.')}
-                    </p>
-                </div>
-
-                <div className="card animate-in delay-4" style={{ gridColumn: '1 / -1', background: 'rgba(250, 204, 21, 0.03)', borderColor: 'rgba(250, 204, 21, 0.15)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', color: 'var(--color-secondary)' }}>
-                        <AlertTriangle size={28} /> <h3 style={{ margin: 0, fontSize: '1.5rem' }}>{t('med_side_effects_warn')}</h3>
-                    </div>
-                    <div className="card-content" style={{ fontSize: '1.1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2.5rem', color: 'var(--text-main)', opacity: 0.9 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem' }}>
                         <div>
-                            <strong style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.5rem' }}>{t('med_side_effects')}</strong>
-                            {lang === 'am' && medicine.side_effects_am ? medicine.side_effects_am : (medicine.side_effects || 'None listed. Consult doctor.')}
+                            <h4 style={{ color: 'var(--color-primary)', marginBottom: '1rem' }}>SIDE EFFECTS</h4>
+                            <p style={{ lineHeight: '1.8' }}>{lang === 'am' && medicine.side_effects_am ? medicine.side_effects_am : (medicine.side_effects || 'None reported. Use with caution.')}</p>
                         </div>
                         <div>
-                            <strong style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.5rem' }}>{t('med_safety_warn')}</strong>
-                            {lang === 'am' && medicine.safety_warnings_am ? medicine.safety_warnings_am : (medicine.safety_warnings || 'Use as directed.')}
+                            <h4 style={{ color: 'var(--color-primary)', marginBottom: '1rem' }}>CONTRAINDICATIONS</h4>
+                            <p style={{ lineHeight: '1.8' }}>{lang === 'am' && medicine.safety_warnings_am ? medicine.safety_warnings_am : (medicine.safety_warnings || 'Follow instructions strictly.')}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="animate-in delay-4" style={{ marginTop: '5rem', textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', padding: '4rem 2rem', borderRadius: '24px', border: '1px solid rgba(239, 68, 68, 0.1)', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translate(-50%, -50%)', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(239, 68, 68, 0.2), transparent 70%)', zIndex: 0 }}></div>
-                <div style={{ position: 'relative', zIndex: 1 }}>
-                    <h2 style={{ fontSize: '2.25rem', marginBottom: '1.5rem' }}>{t('med_ready_find')}</h2>
-                    <p style={{ color: 'var(--text-muted)', marginBottom: '2.5rem', fontSize: '1.1rem' }}>{t('med_discover_pharm')} <span style={{ color: 'white', fontWeight: 600 }}>{medicine.generic_name}</span>.</p>
-                    <Link to={`/pharmacies?medicine_id=${medicine.id}`} className="btn btn-primary" style={{ padding: '1rem 2.5rem', fontSize: '1.1rem' }}>
-                        <MapPin size={22} /> {t('med_btn_find_providers')}
-                    </Link>
+            <div className="glass-panel" style={{ marginTop: '4rem', padding: '3rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
+                    <MapPin size={32} style={{ color: 'var(--color-primary)' }} />
+                    <h2 style={{ fontSize: '2rem' }}>Real-time <span>Availability</span></h2>
                 </div>
+
+                {medicine.pharmacies && medicine.pharmacies.length > 0 ? (
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ minWidth: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '2px solid #000' }}>
+                                    <th style={{ textAlign: 'left', padding: '1.5rem 1rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pharmacy</th>
+                                    <th style={{ textAlign: 'left', padding: '1.5rem 1rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Location</th>
+                                    <th style={{ textAlign: 'center', padding: '1.5rem 1rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock Status</th>
+                                    <th style={{ textAlign: 'right', padding: '1.5rem 1rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Unit Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {medicine.pharmacies.map((p, idx) => (
+                                    <tr key={idx} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                                        <td style={{ padding: '1.5rem 1rem' }}>
+                                            <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{p.name}</div>
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{p.phone}</div>
+                                        </td>
+                                        <td style={{ padding: '1.5rem 1rem', color: 'var(--text-muted)' }}>{p.address}</td>
+                                        <td style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>
+                                            <span className={`badge ${p.count > 10 ? 'badge-red' : 'badge-outline'}`} style={{ minWidth: '100px', display: 'inline-block' }}>
+                                                {p.count > 0 ? `${p.count} units` : 'Out of Stock'}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '1.5rem 1rem', textAlign: 'right', fontWeight: 900, color: 'var(--color-primary)', fontSize: '1.2rem' }}>
+                                            {p.price} ETB
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div style={{ textAlign: 'center', padding: '4rem', background: 'rgba(0,0,0,0.02)', borderRadius: '20px' }}>
+                        <AlertTriangle size={48} style={{ opacity: 0.1, marginBottom: '1.5rem' }} />
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>This medication is not currently verified in any local pharmacy stock.</p>
+                    </div>
+                )}
             </div>
         </div>
     );

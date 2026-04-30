@@ -11,6 +11,9 @@ import Medicines from './pages/Medicines';
 import PharmacyDashboard from './pages/PharmacyDashboard';
 import MedicineDetail from './pages/MedicineDetail';
 import ReserveMedicine from './pages/ReserveMedicine';
+import About from './pages/About';
+import Services from './pages/Services';
+import Contact from './pages/Contact';
 
 function App() {
   return (
@@ -29,6 +32,9 @@ function App() {
                 <Route path="/pharmacy-dashboard" element={<PharmacyDashboard />} />
                 <Route path="/medicine/:id" element={<MedicineDetail />} />
                 <Route path="/reserve/:id" element={<ReserveMedicine />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/contact" element={<Contact />} />
               </Routes>
             </main>
             <Footer />
