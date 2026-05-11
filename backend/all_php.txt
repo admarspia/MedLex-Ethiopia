@@ -1,0 +1,3567 @@
+===== ./services/services.medicine.php =====
+<?php
+
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../models/models.medicines.php';
+require_once __DIR__ . '/../models/models.medicineDetails.php';
+
+class MedicineService {
+
+    private $conn;
+
+    public function __construct() {
+        $this->conn = getConnection();
+    }
+
+    private function incrementSearchCount($medicineId) {
+
+        $month = date('Y-m');
+
+        $stmt = $this->conn->prepare(
+            "SELECT *
+             FROM medicine_search_stats
+             WHERE medicine_id = :id
+             AND month = :month"
+        );
+
+        $stmt->execute([
+            ":id" => $medicineId,
+            ":month" => $month
+        ]);
+
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+
+
+        if ($existing) {
+
+            $update = $this->conn->prepare(
+                "UPDATE medicine_search_stats
+                 SET search_count = search_count + 1
+                 WHERE medicine_id = :id
+                 AND month = :month"
+            );
+
+            $update->execute([
+                ":id" => $medicineId,
+                ":month" => $month
+            ]);
+
+        } else {
+
+            $insert = $this->conn->prepare(
+                "INSERT INTO medicine_search_stats
+                (
+                    medicine_id,
+                    search_count,
+                    month
+                )
+                VALUES
+                (
+                    :id,
+                    1,
+                    :month
+                )"
+            );
+
+            $insert->execute([
+                ":id" => $medicineId,
+                ":month" => $month
+            ]);
+        }
+    }
+
+    private function mapToMedicine($row) {
+
+        $medicine = new Medicine();
+
+        $medicine
+            ->setId($row['id'])
+            ->setGenericName($row['generic_name'])
+            ->setBrandName($row['brand_name'])
+            ->setManufacturer($row['manufacturer'])
+            ->setDrugClass($row['drug_class'])
+            ->setTherapeuticClass($row['therapeutic_class'])
+            ->setDosageForm($row['dosage_form'])
+            ->setStrength($row['strength'])
+            ->setRouteOfAdministration(
+                $row['route_of_administration']
+            )
+            ->setIndications($row['indications'])
+            ->setImageUrl($row['image_url'])
+            ->setCreatedAt($row['created_at']);
+
+        return $medicine;
+    }
+
+
+    private function mapToMedicineDetail($row) {
+
+        $detail = new MedicineDetail();
+
+        $detail
+            ->setId($row['id'])
+            ->setMedicineId($row['medicine_id'])
+            ->setMechanismOfAction(
+                $row['mechanism_of_action']
+            )
+            ->setDosageAndAdministration(
+                $row['dosage_and_administration']
+            )
+            ->setBoxedWarning(
+                $row['boxed_warning']
+            )
+            ->setContraindications(
+                $row['contraindications']
+            )
+            ->setWarningsAndPrecautions(
+                $row['warnings_and_precautions']
+            )
+            ->setAdverseReactions(
+                $row['adverse_reactions']
+            )
+            ->setDrugInteractions(
+                $row['drug_interactions']
+            )
+            ->setSource(
+                $row['source']
+            )
+            ->setLastUpdated(
+                $row['last_updated']
+            );
+
+        return $detail;
+    }
+
+    public function getMedicineById($medicineId) {
+
+        try {
+
+            $stmt = $this->conn->prepare(
+                "SELECT *
+                 FROM medicines
+                 WHERE id = :id"
+            );
+
+            $stmt->execute([
+                ":id" => $medicineId
+            ]);
+
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                return null;
+            }
+
+            $this->incrementSearchCount(
+                $medicineId
+            );
+
+            return $this->mapToMedicine($row);
+
+        } catch (PDOException $e) {
+            throw $e;
+        }
+    }
+
+    public function getMedicineByGenericName($name) {
+
+        try {
+
+            $stmt = $this->conn->prepare(
+                "SELECT *
+                 FROM medicines
+                 WHERE generic_name = :name"
+            );
+
+            $stmt->execute([
+                ":name" => $name
+            ]);
+
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                return null;
+            }
+
+            $this->incrementSearchCount(
+                $row['id']
+            );
+
+            return $this->mapToMedicine($row);
+
+        } catch (PDOException $e) {
+            throw $e;
+        }
+    }
+
+    public function getMedicineDetail($medicineId) {
+
+        try {
+
+            $stmt = $this->conn->prepare(
+                "SELECT *
+                 FROM medicine_details
+                 WHERE medicine_id = :id"
+            );
+
+            $stmt->execute([
+                ":id" => $medicineId
+            ]);
+
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                return null;
+            }
+
+            return $this->mapToMedicineDetail($row);
+
+        } catch (PDOException $e) {
+            throw $e;
+        }
+    }
+
+    public function addMedicine(
+        Medicine $medicine,
+        MedicineDetail $detail
+    ) {
+
+        try {
+
+            $this->conn->beginTransaction();
+
+
+            $stmt = $this->conn->prepare(
+                "INSERT INTO medicines (
+                    generic_name,
+                    brand_name,
+                    manufacturer,
+                    drug_class,
+                    therapeutic_class,
+                    dosage_form,
+                    strength,
+                    route_of_administration,
+                    indications,
+                    image_url
+                )
+                VALUES (
+                    :generic_name,
+                    :brand_name,
+                    :manufacturer,
+                    :drug_class,
+                    :therapeutic_class,
+                    :dosage_form,
+                    :strength,
+                    :route,
+                    :indications,
+                    :image_url
+                )"
+            );
+
+
+            $stmt->execute([
+
+                ":generic_name" =>
+                    $medicine->getGenericName(),
+
+                ":brand_name" =>
+                    $medicine->getBrandName(),
+
+                ":manufacturer" =>
+                    $medicine->getManufacturer(),
+
+                ":drug_class" =>
+                    $medicine->getDrugClass(),
+
+                ":therapeutic_class" =>
+                    $medicine->getTherapeuticClass(),
+
+                ":dosage_form" =>
+                    $medicine->getDosageForm(),
+
+                ":strength" =>
+                    $medicine->getStrength(),
+
+                ":route" =>
+                    $medicine->getRouteOfAdministration(),
+
+                ":indications" =>
+                    $medicine->getIndications(),
+
+                ":image_url" =>
+                    $medicine->getImageUrl()
+            ]);
+
+
+            $medicineId = $this->conn->lastInsertId();
+
+            $detail->setMedicineId(
+                $medicineId
+            );
+
+
+            $detailStmt = $this->conn->prepare(
+                "INSERT INTO medicine_details (
+                    medicine_id,
+                    mechanism_of_action,
+                    dosage_and_administration,
+                    boxed_warning,
+                    contraindications,
+                    warnings_and_precautions,
+                    adverse_reactions,
+                    drug_interactions,
+                    source,
+                    last_updated
+                )
+                VALUES (
+                    :medicine_id,
+                    :mechanism,
+                    :dosage,
+                    :boxed,
+                    :contra,
+                    :warnings,
+                    :adverse,
+                    :interactions,
+                    :source,
+                    :updated
+                )"
+            );
+
+
+            $detailStmt->execute([
+
+                ":medicine_id" =>
+                    $detail->getMedicineId(),
+
+                ":mechanism" =>
+                    $detail->getMechanismOfAction(),
+
+                ":dosage" =>
+                    $detail->getDosageAndAdministration(),
+
+                ":boxed" =>
+                    $detail->getBoxedWarning(),
+
+                ":contra" =>
+                    $detail->getContraindications(),
+
+                ":warnings" =>
+                    $detail->getWarningsAndPrecautions(),
+
+                ":adverse" =>
+                    $detail->getAdverseReactions(),
+
+                ":interactions" =>
+                    $detail->getDrugInteractions(),
+
+                ":source" =>
+                    $detail->getSource(),
+
+                ":updated" =>
+                    $detail->getLastUpdated()
+            ]);
+
+
+            $this->conn->commit();
+
+            return true;
+
+        } catch (PDOException $e) {
+
+            $this->conn->rollBack();
+
+            throw $e;
+        }
+    }
+
+    public function removeLowSearchMedicines() {
+
+        $month = date('Y-m');
+
+        $stmt = $this->conn->prepare(
+            "SELECT SUM(search_count) as total
+             FROM medicine_search_stats
+             WHERE month = :month"
+        );
+
+        $stmt->execute([
+            ":month" => $month
+        ]);
+
+        $total = $stmt->fetch(
+            PDO::FETCH_ASSOC
+        )['total'];
+
+
+        if (!$total) {
+            return;
+        }
+
+
+        $threshold = $total * 0.10;
+
+
+        $stmt = $this->conn->prepare(
+            "DELETE FROM medicines
+             WHERE id IN (
+                SELECT medicine_id
+                FROM medicine_search_stats
+                WHERE month = :month
+                AND search_count < :threshold
+             )"
+        );
+
+        $stmt->execute([
+            ":month" => $month,
+            ":threshold" => $threshold
+        ]);
+    }
+}
+
+===== ./services/services.reservation.php =====
+<?php
+
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../models/Reservation.php';
+
+class ReservationService {
+
+    private $conn;
+
+    public function __construct() {
+        $this->conn = getConnection();
+    }
+
+
+
+    /*
+    =====================================
+    CREATE RESERVATION
+    =====================================
+    */
+
+    public function create(Reservation $r) {
+
+        try {
+
+            /*
+            1. Check stock
+            */
+
+            $stmt = $this->conn->prepare(
+                "SELECT count
+                 FROM pharmacy_medicines
+                 WHERE pharmacy_id = :p
+                 AND generic_name = :g"
+            );
+
+            $stmt->execute([
+                ":p" => $r->getPharmacyId(),
+                ":g" => $r->getGenericName()
+            ]);
+
+            $stock = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$stock) {
+                return [
+                    "status" => "error",
+                    "message" => "Medicine not available"
+                ];
+            }
+
+            if ($stock['count'] < $r->getQuantity()) {
+                return [
+                    "status" => "error",
+                    "message" => "Not enough stock"
+                ];
+            }
+
+
+
+            /*
+            2. Insert reservation
+            */
+
+            $stmt = $this->conn->prepare(
+                "INSERT INTO reservations (
+                    pharmacy_id,
+                    reserver_email,
+                    generic_name,
+                    quantity,
+                    reservation_date,
+                    expiration_date,
+                    prescription
+                )
+                VALUES (
+                    :p,
+                    :e,
+                    :g,
+                    :q,
+                    :d,
+                    :x,
+                    :file
+                )"
+            );
+
+            $stmt->execute([
+                ":p" => $r->getPharmacyId(),
+                ":e" => $r->getReserverEmail(),
+                ":g" => $r->getGenericName(),
+                ":q" => $r->getQuantity(),
+                ":d" => $r->getReservationDate(),
+                ":x" => $r->getExpirationDate(),
+                ":file" => $r->getPrescription()
+            ]);
+
+
+
+            return [
+                "status" => "ok",
+                "message" => "Reservation created"
+            ];
+
+        } catch (PDOException $e) {
+
+            return [
+                "status" => "error",
+                "message" => $e->getMessage()
+            ];
+        }
+    }
+
+
+
+    /*
+    =====================================
+    CANCEL RESERVATION
+    =====================================
+    */
+
+    public function cancel($id) {
+
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM reservations WHERE id = :id"
+        );
+
+        $stmt->execute([":id" => $id]);
+
+        $res = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$res) {
+            return ["status" => "error", "message" => "Not found"];
+        }
+
+        $del = $this->conn->prepare(
+            "DELETE FROM reservations WHERE id = :id"
+        );
+
+        $del->execute([":id" => $id]);
+
+        return [
+            "status" => "ok",
+            "data" => $res
+        ];
+    }
+
+
+
+    /*
+    =====================================
+    FOR CRON: EXPIRING RESERVATIONS
+    =====================================
+    */
+
+    public function getExpiringSoon($from, $to) {
+
+        $stmt = $this->conn->prepare(
+            "SELECT *
+             FROM reservations
+             WHERE expiration_date BETWEEN :f AND :t"
+        );
+
+        $stmt->execute([
+            ":f" => $from,
+            ":t" => $to
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+}
+===== ./services/services.pharmacy.php =====
+<?php
+
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../models/models.pharmacyMedicine.php';
+
+class PharmacyService {
+
+    private $conn;
+
+    public function __construct() {
+        $this->conn = getConnection();
+    }
+
+
+    public function create($data) {
+
+        try {
+
+            $stmt = $this->conn->prepare(
+                "INSERT INTO pharmacies
+                (
+                    name,
+                    address,
+                    phone,
+                    email,
+                    password_hash,
+                    license
+                )
+                VALUES
+                (
+                    :name,
+                    :address,
+                    :phone,
+                    :email,
+                    :password_hash,
+                    :license
+                )"
+            );
+
+
+            $stmt->execute([
+
+                ":name" =>
+                    $data["name"],
+
+                ":address" =>
+                    $data["address"],
+
+                ":phone" =>
+                    $data["phone"],
+
+                ":email" =>
+                    $data["email"],
+
+                ":password_hash" =>
+                    $data["password_hash"],
+
+                ":license" =>
+                    $data["license"]
+            ]);
+
+
+            return [
+                "status" => "ok",
+                "id" => $this->conn->lastInsertId()
+            ];
+
+        } catch (PDOException $e) {
+
+            return [
+                "status" => "error",
+                "message" => $e->getMessage()
+            ];
+        }
+    }
+
+
+    public function findByEmail($email) {
+
+        try {
+
+            $stmt = $this->conn->prepare(
+                "SELECT *
+                 FROM pharmacies
+                 WHERE email = :email
+                 LIMIT 1"
+            );
+
+            $stmt->execute([
+                ":email" => $email
+            ]);
+
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$result) {
+                return null;
+            }
+
+            return $result;
+
+        } catch (PDOException $e) {
+            throw $e;
+        }
+    }
+
+    public function findById($id) {
+
+        try {
+
+            $stmt = $this->conn->prepare(
+                "SELECT *
+                 FROM pharmacies
+                 WHERE id = :id
+                 LIMIT 1"
+            );
+
+            $stmt->execute([
+                ":id" => $id
+            ]);
+
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$result) {
+                return null;
+            }
+
+            return $result;
+
+        } catch (PDOException $e) {
+            throw $e;
+        }
+    }
+
+    public function addMedicineToPharmacy(
+        PharmacyMedicine $pharmacyMedicine
+    ) {
+
+        try {
+
+            $check = $this->conn->prepare(
+                "SELECT id
+                 FROM pharmacy_medicines
+                 WHERE pharmacy_id = :p
+                 AND medicine_id = :m"
+            );
+
+
+            $check->execute([
+
+                ":p" =>
+                    $pharmacyMedicine->getPharmacyId(),
+
+                ":m" =>
+                    $pharmacyMedicine->getMedicineId()
+            ]);
+
+
+            if ($check->fetch()) {
+
+                return [
+                    "status" => "ok",
+                    "message" => "Already exists"
+                ];
+            }
+
+            $stmt = $this->conn->prepare(
+                "INSERT INTO pharmacy_medicines
+                (
+                    pharmacy_id,
+                    medicine_id,
+                    count,
+                    price,
+                    image_path
+                )
+                VALUES
+                (
+                    :pharmacy_id,
+                    :medicine_id,
+                    :count,
+                    :price,
+                    :image_path
+                )"
+            );
+
+
+            $stmt->execute([
+
+                ":pharmacy_id" =>
+                    $pharmacyMedicine->getPharmacyId(),
+
+                ":medicine_id" =>
+                    $pharmacyMedicine->getMedicineId(),
+
+                ":count" =>
+                    $pharmacyMedicine->getCount(),
+
+                ":price" =>
+                    $pharmacyMedicine->getPrice(),
+
+                ":image_path" =>
+                    $pharmacyMedicine->getImagePath()
+            ]);
+
+
+            return [
+                "status" => "ok",
+                "message" => "Medicine added"
+            ];
+
+        } catch (PDOException $e) {
+
+            return [
+                "status" => "error",
+                "message" => $e->getMessage()
+            ];
+        }
+    }
+
+
+    public function removeMedicine(
+        $pharmacyId,
+        $medicineId
+    ) {
+
+        try {
+
+            $stmt = $this->conn->prepare(
+                "DELETE FROM pharmacy_medicines
+                 WHERE pharmacy_id = :p
+                 AND medicine_id = :m"
+            );
+
+            $stmt->execute([
+                ":p" => $pharmacyId,
+                ":m" => $medicineId
+            ]);
+
+
+            return [
+                "status" => "ok",
+                "message" => "Removed"
+            ];
+
+        } catch (PDOException $e) {
+
+            return [
+                "status" => "error",
+                "message" => $e->getMessage()
+            ];
+        }
+    }
+
+    public function getPharmacies() {
+
+        try {
+
+            $stmt = $this->conn->prepare(
+                "SELECT *
+                 FROM pharmacies"
+            );
+
+            $stmt->execute();
+
+            return [
+                "status" => "ok",
+                "data" => $stmt->fetchAll(PDO::FETCH_ASSOC)
+            ];
+
+        } catch (PDOException $e) {
+
+            return [
+                "status" => "error",
+                "message" => $e->getMessage()
+            ];
+        }
+    }
+
+
+
+    public function getMedicines($pharmacyId) {
+
+        try {
+
+            $stmt = $this->conn->prepare(
+                "SELECT
+                    m.*,
+                    pm.count,
+                    pm.price,
+                    pm.image_path
+
+                 FROM pharmacy_medicines pm
+
+                 JOIN medicines m
+                 ON pm.medicine_id = m.id
+
+                 WHERE pm.pharmacy_id = :p"
+            );
+
+            $stmt->execute([
+                ":p" => $pharmacyId
+            ]);
+
+
+            return [
+                "status" => "ok",
+                "data" => $stmt->fetchAll(PDO::FETCH_ASSOC)
+            ];
+
+        } catch (PDOException $e) {
+
+            return [
+                "status" => "error",
+                "message" => $e->getMessage()
+            ];
+        }
+    }
+
+}
+
+===== ./config/jwt.php =====
+<?php
+
+return [
+    "secret" => "K8v!d92@xQz#P1mL8sT!wR4yU7nB9cV2hJ6k",
+    "issuer" => "medlex-api"
+];
+
+?>
+<?php
+// backend/config/jwt.php
+use \Firebase\JWT\JWT;
+use \Firebase\JWT\Key;
+
+require_once __DIR__ . '/../vendor/autoload.php'; // make sure firebase/php-jwt is installed
+
+// Load config
+$config = include __DIR__ . '/jwt_config.php';
+$secretKey = $config['secret'];
+$issuer = $config['issuer'];
+
+// Generate JWT token
+function generateJWT($payload) {
+    global $secretKey, $issuer;
+
+    $issuedAt = time();
+    $expire = $issuedAt + 3600; // 1 hour
+
+    $tokenPayload = array_merge($payload, [
+        'iat' => $issuedAt,
+        'exp' => $expire,
+        'iss' => $issuer
+    ]);
+
+    return JWT::encode($tokenPayload, $secretKey, 'HS256');
+}
+
+// Verify JWT token
+function verifyJWT($token) {
+    global $secretKey;
+
+    try {
+        $decoded = JWT::decode($token, new Key($secretKey, 'HS256'));
+        return (array)$decoded;
+    } catch (Exception $e) {
+        return false; // invalid or expired token
+    }
+}
+===== ./config/database.php =====
+<?php
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Dotenv\Dotenv;
+
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
+function getConnection() {
+
+  try {
+    $dbPath = __DIR__ . '/../database/medlex.db';
+
+    $conn = new PDO("sqlite:" . $dbPath);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    $conn->exec("
+            CREATE TABLE IF NOT EXISTS pharmacies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                address TEXT,
+                phone TEXT,
+                email TEXT UNIQUE,
+                password_hash TEXT,
+                license TEXT
+            );
+    ");
+
+
+    $conn->exec("
+    CREATE TABLE IF NOT EXISTS medicine_details (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        medicine_id INTEGER NOT NULL UNIQUE,
+
+        mechanism_of_action TEXT,
+
+        dosage_and_administration TEXT,
+
+        boxed_warning TEXT,
+        contraindications TEXT,
+        warnings_and_precautions TEXT,
+
+        adverse_reactions TEXT,
+
+        drug_interactions TEXT,
+        food_interactions TEXT,
+        alcohol_warning TEXT,
+
+        overdose_information TEXT,
+
+        pregnancy_info TEXT,
+        breastfeeding_info TEXT,
+        pediatric_use TEXT,
+        geriatric_use TEXT,
+
+        renal_adjustment TEXT,
+        hepatic_adjustment TEXT,
+
+        pharmacodynamics TEXT,
+        pharmacokinetics TEXT,
+
+        ingredients TEXT,
+        storage_conditions TEXT,
+        half_life TEXT,
+
+        clinical_notes TEXT,
+
+        source TEXT,
+        last_updated DATETIME,
+
+        FOREIGN KEY (medicine_id) REFERENCES medicines(id)
+    );
+");
+
+        $conn->exec("
+            CREATE TABLE IF NOT EXISTS medicines (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                generic_name TEXT NOT NULL UNIQUE,
+                brand_name TEXT,
+
+                manufacturer TEXT,
+
+                drug_class TEXT,
+                therapeutic_class TEXT,
+
+                dosage_form TEXT,
+                strength TEXT,
+                route_of_administration TEXT,
+
+                indications TEXT,
+
+                image_url TEXT,
+
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+        ");
+
+        $conn->exec("
+                CREATE TABLE IF NOT EXISTS pharmacy_medicines (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    pharmacy_id INTEGER,
+                    medicine_id INTEGER,
+                    count INTEGER,
+                    price DOUBLE,
+                    image_path TEXT,
+                    FOREIGN KEY (pharmacy_id) REFERENCES pharmacies(id),
+                    FOREIGN KEY (medicine_id) REFERENCES medicines(id)
+                );
+            ");
+
+        $conn->exec("
+            CREATE TABLE IF NOT EXISTS medicine_search_stats (
+            medicine_id INTEGER PRIMARY KEY,
+
+            search_count INTEGER DEFAULT 0,
+
+            month TEXT NOT NULL,
+
+            FOREIGN KEY (medicine_id) REFERENCES medicines(id)
+        );
+    ");
+
+        $conn->exec("
+                CREATE TABLE IF NOT EXISTS reservations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    pharmacy_id INTEGER NOT NULL,
+                    reserver_email TEXT NOT NULL,
+                    generic_name TEXT NOT NULL,
+                    quantity INTEGER NOT NULL,
+                    reservation_date DATETIME NOT NULL,
+                    expiration_date DATETIME NOT NULL,
+                    prescription TEXT,
+
+                    FOREIGN KEY (pharmacy_id) REFERENCES pharmacies(id)
+                );
+            ");
+        return $conn;
+
+    } catch (PDOException $e) {
+        die($e->getMessage());
+    }
+}
+
+===== ./validators/validator.reservation.php =====
+<?php
+
+class ReservationValidator {
+
+    public function validate(array $data): array {
+
+        $pharmacyId = intval($data['pharmacy_id'] ?? 0);
+        $email      = trim($data['reserver_email'] ?? '');
+        $generic    = trim($data['generic_name'] ?? '');
+        $quantity   = intval($data['quantity'] ?? 0);
+
+        $errors = [];
+
+        if ($pharmacyId <= 0) {
+            $errors[] = "Invalid pharmacy id";
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "Invalid email";
+        }
+
+        if (strlen($generic) < 2) {
+            $errors[] = "Invalid generic name";
+        }
+
+        if ($quantity <= 0 || $quantity > 1000) {
+            $errors[] = "Invalid quantity";
+        }
+
+        if (!empty($errors)) {
+            throw new Exception(json_encode($errors));
+        }
+
+        return [
+            "pharmacy_id" => $pharmacyId,
+            "reserver_email" => $email,
+            "generic_name" => $generic,
+            "quantity" => $quantity
+        ];
+    }
+
+
+
+    public function validatePrescription(array $file): void {
+
+        if (!isset($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception("Prescription file required");
+        }
+
+        if ($file['size'] > 5 * 1024 * 1024) {
+            throw new Exception("File too large (max 5MB)");
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        $allowed = [
+            'application/pdf',
+            'image/jpeg',
+            'image/png'
+        ];
+
+        if (!in_array($mime, $allowed)) {
+            throw new Exception("Invalid file type");
+        }
+    }
+}
+
+===== ./validators/validator.medicine.php =====
+<?php
+
+class ReservationValidator {
+
+    public function validate(array $data): array {
+
+        $userId =
+            intval($data['user_id'] ?? 0);
+
+        $pharmacyId =
+            intval($data['pharmacy_id'] ?? 0);
+
+        $medicineId =
+            intval($data['medicine_id'] ?? 0);
+
+        $quantity =
+            intval($data['quantity'] ?? 0);
+
+
+        if ($userId <= 0) {
+            throw new Exception(
+                "Invalid user ID"
+            );
+        }
+
+        if ($pharmacyId <= 0) {
+            throw new Exception(
+                "Invalid pharmacy ID"
+            );
+        }
+
+        if ($medicineId <= 0) {
+            throw new Exception(
+                "Invalid medicine ID"
+            );
+        }
+
+        if ($quantity <= 0) {
+            throw new Exception(
+                "Invalid quantity"
+            );
+        }
+
+
+        return [
+
+            "user_id" =>
+                $userId,
+
+            "pharmacy_id" =>
+                $pharmacyId,
+
+            "medicine_id" =>
+                $medicineId,
+
+            "quantity" =>
+                $quantity
+        ];
+    }
+
+
+    public function validatePrescription(
+        array $file
+    ) {
+
+        if (!isset($file['tmp_name'])) {
+            throw new Exception(
+                "Prescription required"
+            );
+        }
+
+        if (
+            $file['error']
+            !== UPLOAD_ERR_OK
+        ) {
+            throw new Exception(
+                "Upload failed"
+            );
+        }
+
+        if (
+            $file['size']
+            > 5 * 1024 * 1024
+        ) {
+            throw new Exception(
+                "File too large"
+            );
+        }
+
+
+        $finfo =
+            finfo_open(
+                FILEINFO_MIME_TYPE
+            );
+
+        $mime =
+            finfo_file(
+                $finfo,
+                $file['tmp_name']
+            );
+
+        finfo_close($finfo);
+
+
+        $allowed = [
+
+            'application/pdf',
+            'image/jpeg',
+            'image/png'
+        ];
+
+
+        if (
+            !in_array(
+                $mime,
+                $allowed
+            )
+        ) {
+            throw new Exception(
+                "Invalid file type"
+            );
+        }
+    }
+}
+
+===== ./validators/validators.pharmacy.php =====
+<?php
+
+class PharmacyValidator {
+
+    public function validateRegistration(array $data): array {
+
+        $name = trim($data['name'] ?? '');
+        $address = trim($data['address'] ?? '');
+        $phone = trim($data['phone'] ?? '');
+        $email = filter_var(
+            trim($data['email'] ?? ''),
+            FILTER_SANITIZE_EMAIL
+        );
+
+        $password = $data['password'] ?? '';
+
+        if (empty($name)) {
+            throw new Exception("Name is required");
+        }
+
+        if (strlen($name) < 3 || strlen($name) > 100) {
+            throw new Exception("Name must be 3-100 characters");
+        }
+
+        if (!preg_match('/^[a-zA-Z\s]+$/', $name)) {
+            throw new Exception("Invalid name format");
+        }
+
+        if (empty($address)) {
+            throw new Exception("Address is required");
+        }
+
+        if (strlen($address) < 5) {
+            throw new Exception("Invalid address");
+        }
+
+        if (empty($phone)) {
+            throw new Exception("Phone is required");
+        }
+
+        if (!preg_match('/^[0-9+\-\s]{7,20}$/', $phone)) {
+            throw new Exception("Invalid phone number");
+        }
+
+        if (
+            !filter_var(
+                $email,
+                FILTER_VALIDATE_EMAIL
+            )
+        ) {
+            throw new Exception("Invalid email");
+        }
+
+
+        if (strlen($password) < 8) {
+            throw new Exception(
+                "Password must be at least 8 characters"
+            );
+        }
+
+        if (
+            !preg_match(
+                '/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).+$/',
+                $password
+            )
+        ) {
+            throw new Exception(
+                "Password must contain uppercase, lowercase, and number"
+            );
+        }
+
+        return [
+            "name" => $name,
+            "address" => $address,
+            "phone" => $phone,
+            "email" => $email,
+            "password" => $password
+        ];
+    }
+
+
+    public function validateUpload(array $file): void {
+
+        if (!isset($file['tmp_name'])) {
+            throw new Exception("File required");
+        }
+
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception("Upload failed");
+        }
+
+        if ($file['size'] > 5 * 1024 * 1024) {
+            throw new Exception("File too large");
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+
+        $mime = finfo_file(
+            $finfo,
+            $file['tmp_name']
+        );
+
+        finfo_close($finfo);
+
+        $allowed = [
+            'image/jpeg',
+            'image/png',
+            'application/pdf'
+        ];
+
+        if (!in_array($mime, $allowed)) {
+            throw new Exception(
+                "Invalid file type"
+            );
+        }
+    }
+
+}
+
+===== ./controllers/controller.pharmacy.php =====
+<?php
+
+require_once __DIR__ . '/../services/services.pharmacy.php';
+require_once __DIR__ . '/../services/service.medicine.php';
+require_once __DIR__ . '/../validators/validators.pharmacy.php';
+require_once __DIR__ . '/../validators/validators.medicine.php';
+require_once __DIR__ . '/controllers.medicine.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Firebase\JWT\JWT;
+
+class PharmacyController {
+
+    private $pharmacyService;
+    private $medicineService;
+    private $medicineController;
+    private $pharmacyValidator;
+    private $medicineValidator;
+    private $jwtConfig;
+
+
+
+    public function __construct() {
+
+        $this->pharmacyService = new PharmacyService();
+        $this->medicineService = new MedicineService();
+        $this->medicineController = new MedicineController();
+
+        $this->pharmacyValidator = new PharmacyValidator();
+        $this->medicineValidator = new MedicineValidator();
+        $this->jwtConfig =
+            require __DIR__ . '/../config/jwt.php';
+    }
+
+    public function register() {
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return $this->response(
+                405,
+                "Method not allowed"
+            );
+        }
+
+        try {
+
+            $data =
+                $this->pharmacyValidator
+                    ->validateRegistration($_POST);
+
+            $this->pharmacyValidator
+                ->validateUpload(
+                    $_FILES['license']
+                );
+
+            $existing =
+                $this->pharmacyService
+                    ->findByEmail(
+                        $data['email']
+                    );
+
+            if ($existing['status'] === 'ok') {
+
+                return $this->response(
+                    409,
+                    "Email already exists"
+                );
+            }
+
+            $licensePath =
+                $this->saveFile(
+                    $_FILES['license'],
+                    "licenses"
+                );
+
+            $passwordHash =
+                password_hash(
+                    $data['password'],
+                    PASSWORD_BCRYPT
+                );
+
+            $result =
+                $this->pharmacyService
+                    ->create([
+                        "name" =>
+                            $data['name'],
+
+                        "address" =>
+                            $data['address'],
+
+                        "phone" =>
+                            $data['phone'],
+
+                        "email" =>
+                            $data['email'],
+
+                        "password_hash" =>
+                            $passwordHash,
+
+                        "license" =>
+                            $licensePath
+                    ]);
+
+
+            if (
+                $result['status'] !== 'ok'
+            ) {
+
+                return $this->response(
+                    500,
+                    $result['message']
+                );
+            }
+
+
+            $token =
+                $this->generateJWT(
+                    $data['email']
+                );
+
+
+            return $this->response(
+                201,
+                [
+                    "message" =>
+                        "Registration successful",
+
+                    "token" =>
+                        $token
+                ]
+            );
+
+        } catch (Exception $e) {
+
+            return $this->response(
+                422,
+                $e->getMessage()
+            );
+        }
+    }
+
+    public function login() {
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return $this->response(
+                405,
+                "Method not allowed"
+            );
+        }
+
+        try {
+
+            $raw =
+                file_get_contents(
+                    "php://input"
+                );
+
+            $data =
+                json_decode(
+                    $raw,
+                    true
+                );
+
+            if (!$data) {
+                throw new Exception(
+                    "Invalid JSON"
+                );
+            }
+
+
+            $email =
+                filter_var(
+                    trim(
+                        $data['email']
+                            ?? ''
+                    ),
+                    FILTER_SANITIZE_EMAIL
+                );
+
+            $password =
+                $data['password']
+                    ?? '';
+
+
+            if (
+                !filter_var(
+                    $email,
+                    FILTER_VALIDATE_EMAIL
+                )
+            ) {
+                throw new Exception(
+                    "Invalid email"
+                );
+            }
+
+
+            $result =
+                $this->pharmacyService
+                    ->findByEmail(
+                        $email
+                    );
+
+
+            if (
+                $result['status']
+                !== 'ok'
+            ) {
+
+                return $this->response(
+                    404,
+                    "User not found"
+                );
+            }
+
+
+            $user =
+                $result['data'];
+
+
+            if (
+                !password_verify(
+                    $password,
+                    $user[
+                        'password_hash'
+                    ]
+                )
+            ) {
+
+                return $this->response(
+                    401,
+                    "Invalid password"
+                );
+            }
+
+
+            $_SESSION[
+                "pharmacy_id"
+            ] = $user['id'];
+
+
+            $token =
+                $this->generateJWT(
+                    $email
+                );
+
+
+            return $this->response(
+                200,
+                [
+                    "message" =>
+                        "Login successful",
+
+                    "token" =>
+                        $token
+                ]
+            );
+
+        } catch (Exception $e) {
+
+            return $this->response(
+                400,
+                $e->getMessage()
+            );
+        }
+    }
+
+    public function addMedicine() {
+
+        if (
+            !isset(
+                $_SESSION[
+                    "pharmacy_id"
+                ]
+            )
+        ) {
+
+            return $this->response(
+                401,
+                "Unauthorized"
+            );
+        }
+
+        try {
+
+            $pharmacyId =
+                $_SESSION[
+                    "pharmacy_id"
+                ];
+
+
+            $genericName =
+                trim(
+                    $_POST[
+                        'generic_name'
+                    ] ?? ''
+                );
+
+            $count =
+                intval(
+                    $_POST[
+                        'count'
+                    ] ?? 0
+                );
+
+            $price =
+                floatval(
+                    $_POST[
+                        'price'
+                    ] ?? 0
+                );
+
+
+            if (
+                empty(
+                    $genericName
+                )
+            ) {
+
+                throw new Exception(
+                    "Generic name required"
+                );
+            }
+
+            if ($count <= 0) {
+                throw new Exception(
+                    "Invalid count"
+                );
+            }
+
+            if ($price <= 0) {
+                throw new Exception(
+                    "Invalid price"
+                );
+            }
+
+
+            $this->medicineValidator
+                ->validatePrescription(
+                    $_FILES['image']
+                );
+
+
+            $imagePath =
+                $this->saveFile(
+                    $_FILES['image'],
+                    "medicines"
+                );
+
+            $medicineResult =
+                $this->medicineController
+                    ->getByGenericName(
+                        $genericName
+                    );
+
+
+            if (
+                $medicineResult[
+                    "status"
+                ] !== "ok"
+            ) {
+
+                throw new Exception(
+                    "Medicine not found"
+                );
+            }
+
+
+            $medicine =
+                $medicineResult[
+                    "data"
+                ]["medicine"];
+
+
+            $medicineId =
+                $medicine['id'];
+
+
+            $result =
+                $this->medicineService
+                    ->addPharmacyMedicine(
+                        $pharmacyId,
+                        $medicineId,
+                        $count,
+                        $price,
+                        $imagePath
+                    );
+
+
+            return $this->response(
+                201,
+                $result
+            );
+
+        } catch (Exception $e) {
+
+            return $this->response(
+                422,
+                $e->getMessage()
+            );
+        }
+    }
+
+    public function updatePrice(
+        $genericName,
+        $newPrice
+    ) {
+
+        if (
+            !isset(
+                $_SESSION[
+                    "pharmacy_id"
+                ]
+            )
+        ) {
+
+            return $this->response(
+                401,
+                "Unauthorized"
+            );
+        }
+
+
+        $pharmacyId =
+            $_SESSION[
+                "pharmacy_id"
+            ];
+
+
+        $result =
+            $this->medicineService
+                ->updatePrice(
+                    $pharmacyId,
+                    $genericName,
+                    $newPrice
+                );
+
+
+        if (
+            $result['status']
+            === 'error'
+        ) {
+
+            return $this->response(
+                500,
+                $result['message']
+            );
+        }
+
+
+        return $this->response(
+            200,
+            $result['message']
+        );
+    }
+
+    public function removeMedicine() {
+
+        if (
+            !isset(
+                $_SESSION[
+                    "pharmacy_id"
+                ]
+            )
+        ) {
+
+            return $this->response(
+                401,
+                "Unauthorized"
+            );
+        }
+
+
+        $pharmacyId =
+            $_SESSION[
+                "pharmacy_id"
+            ];
+
+        $medicineId =
+            $_POST['id']
+                ?? null;
+
+
+        $result =
+            $this->pharmacyService
+                ->removeMedicine(
+                    $pharmacyId,
+                    $medicineId
+                );
+
+
+        return $this->response(
+            200,
+            $result
+        );
+    }
+
+    public function getPharmacies() {
+
+        $result =
+            $this->pharmacyService
+                ->getPharmacies();
+
+        return $this->response(
+            200,
+            $result['data']
+        );
+    }
+
+    public function getMedicines() {
+
+        $pharmacyId =
+            $_GET['id']
+                ?? null;
+
+        if (!$pharmacyId) {
+
+            return $this->response(
+                400,
+                "Pharmacy ID required"
+            );
+        }
+
+
+        $result =
+            $this->pharmacyService
+                ->getMedicines(
+                    $pharmacyId
+                );
+
+
+        return $this->response(
+            200,
+            $result['data']
+        );
+    }
+
+    public function getSession() {
+
+        if (
+            !isset(
+                $_SESSION[
+                    "pharmacy_id"
+                ]
+            )
+        ) {
+
+            return $this->response(
+                401,
+                "Not logged in"
+            );
+        }
+
+
+        return $this->response(
+            200,
+            $_SESSION[
+                "pharmacy_id"
+            ]
+        );
+    }
+
+    private function saveFile(
+        $file,
+        $folder
+    ) {
+
+        $uploadDir =
+            __DIR__
+            . "/../uploads/"
+            . $folder
+            . "/";
+
+        if (
+            !is_dir(
+                $uploadDir
+            )
+        ) {
+
+            mkdir(
+                $uploadDir,
+                0777,
+                true
+            );
+        }
+
+
+        $fileName =
+            uniqid()
+            . "_"
+            . basename(
+                $file['name']
+            );
+
+
+        $fullPath =
+            $uploadDir
+            . $fileName;
+
+
+        if (
+            !move_uploaded_file(
+                $file[
+                    'tmp_name'
+                ],
+                $fullPath
+            )
+        ) {
+
+            throw new Exception(
+                "File upload failed"
+            );
+        }
+
+
+        return
+            "uploads/"
+            . $folder
+            . "/"
+            . $fileName;
+    }
+
+
+
+    private function generateJWT(
+        $email
+    ) {
+
+        $issuedAt = time();
+
+        $payload = [
+
+            "iss" =>
+                $this->jwtConfig[
+                    "issuer"
+                ],
+
+            "iat" =>
+                $issuedAt,
+
+            "exp" =>
+                $issuedAt + 3600,
+
+            "sub" =>
+                $email
+        ];
+
+
+        return JWT::encode(
+            $payload,
+            $this->jwtConfig[
+                "secret"
+            ],
+            'HS256'
+        );
+    }
+
+
+
+    private function response(
+        $status,
+        $data
+    ) {
+
+        http_response_code(
+            $status
+        );
+
+        header(
+            'Content-Type: application/json'
+        );
+
+        echo json_encode([
+            "status" => $status,
+            "data" => $data
+        ]);
+
+        exit;
+    }
+
+}
+
+===== ./controllers/cotrollers.medicine.php =====
+<?php
+
+require_once __DIR__ . '/../services/services.medicines.php';
+require_once __DIR__ . '/../services/services.pharmacy.php';
+
+require_once __DIR__ . '/../models/models.medicines.php';
+require_once __DIR__ . '/../models/models.medicineDetails.php';
+
+
+class MedicineController {
+
+    private $medicineService;
+    private $pharmacyService;
+
+
+    public function __construct() {
+
+        $this->medicineService =
+            new MedicineService();
+
+        $this->pharmacyService =
+            new PharmacyService();
+    }
+
+    public function getByGenericName(
+        $genericName
+    ) {
+
+        try {
+            $medicine =
+                $this->medicineService
+                    ->getMedicineByGenericName(
+                        $genericName
+                    );
+
+            if (!$medicine) {
+
+                $external =
+                    $this->fetchMedicine(
+                        $genericName
+                    );
+
+
+                if (!$external) {
+
+                    return [
+                        "status" => "error",
+                        "message" =>
+                            "Medicine not found"
+                    ];
+                }
+
+
+                $medicine =
+                    $external["medicine"];
+
+                $detail =
+                    $external["detail"];
+
+
+                $this->medicineService
+                    ->addMedicine(
+                        $medicine,
+                        $detail
+                    );
+
+                $medicine =
+                    $this->medicineService
+                        ->getMedicineByGenericName(
+                            $genericName
+                        );
+            }
+
+            $detail =
+                $this->medicineService
+                    ->getMedicineDetail(
+                        $medicine->getId()
+                    );
+
+            $pharmacies =
+                $this->pharmacyService
+                    ->getPharmaciesByMedicine(
+                        $medicine->getId()
+                    );
+
+
+            return [
+
+                "status" => "ok",
+
+                "data" => [
+
+                    "medicine" =>
+                        $medicine,
+
+                    "detail" =>
+                        $detail,
+
+                    "pharmacies" =>
+                        $pharmacies
+                ]
+            ];
+
+        } catch (Exception $e) {
+
+            return [
+
+                "status" => "error",
+
+                "message" =>
+                    $e->getMessage()
+            ];
+        }
+    }
+
+    public function searchByGenericName(
+        $genericName
+    ) {
+
+        $result =
+            $this->getByGenericName(
+                $genericName
+            );
+
+
+        if (
+            $result["status"]
+            === "error"
+        ) {
+
+            return $this->response(
+                404,
+                $result["message"]
+            );
+        }
+
+
+        return $this->response(
+            200,
+            $result["data"]
+        );
+    }
+
+    public function getById(
+        $medicineId
+    ) {
+
+        try {
+
+            $medicine =
+                $this->medicineService
+                    ->getMedicineById(
+                        $medicineId
+                    );
+
+
+            if (!$medicine) {
+
+                return $this->response(
+                    404,
+                    "Medicine not found"
+                );
+            }
+
+
+            $detail =
+                $this->medicineService
+                    ->getMedicineDetail(
+                        $medicineId
+                    );
+
+
+            return $this->response(
+                200,
+                [
+
+                    "medicine" =>
+                        $medicine,
+
+                    "detail" =>
+                        $detail
+                ]
+            );
+
+        } catch (Exception $e) {
+
+            return $this->response(
+                500,
+                $e->getMessage()
+            );
+        }
+    }
+
+    public function cleanup() {
+
+        try {
+
+            $this->medicineService
+                ->removeLowSearchMedicines();
+
+            return $this->response(
+                200,
+                "Cleanup completed"
+            );
+
+        } catch (Exception $e) {
+
+            return $this->response(
+                500,
+                $e->getMessage()
+            );
+        }
+    }
+
+    private function fetchMedicine(
+        $name
+    ) {
+
+        $url =
+            "https://api.fda.gov/drug/label.json?search=openfda.generic_name:"
+            . urlencode($name)
+            . "&limit=1";
+
+
+        $response =
+            file_get_contents(
+                $url
+            );
+
+
+        if (!$response) {
+            return null;
+        }
+
+
+        $data =
+            json_decode(
+                $response,
+                true
+            );
+
+
+        if (
+            !isset(
+                $data['results'][0]
+            )
+        ) {
+
+            return null;
+        }
+
+
+        $row =
+            $data['results'][0];
+
+        $medicine =
+            new Medicine();
+
+        $medicine
+            ->setGenericName(
+                $row['openfda']['generic_name'][0]
+                    ?? null
+            )
+            ->setBrandName(
+                $row['openfda']['brand_name'][0]
+                    ?? null
+            )
+            ->setManufacturer(
+                $row['openfda']['manufacturer_name'][0]
+                    ?? null
+            )
+            ->setIndications(
+                $row['indications_and_usage'][0]
+                    ?? null
+            );
+
+        $detail =
+            new MedicineDetail();
+
+        $detail
+            ->setDosageAndAdministration(
+                $row['dosage_and_administration'][0]
+                    ?? null
+            )
+
+            ->setWarningsAndPrecautions(
+                $row['warnings'][0]
+                    ?? null
+            )
+
+            ->setContraindications(
+                $row['contraindications'][0]
+                    ?? null
+            )
+
+            ->setSource(
+                "openFDA"
+            )
+
+            ->setLastUpdated(
+                date(
+                    'Y-m-d H:i:s'
+                )
+            );
+
+
+        return [
+
+            "medicine" =>
+                $medicine,
+
+            "detail" =>
+                $detail
+        ];
+    }
+
+    private function response(
+        $status,
+        $data
+    ) {
+
+        http_response_code(
+            $status
+        );
+
+        header(
+            'Content-Type: application/json'
+        );
+
+
+        echo json_encode([
+
+            "status" =>
+                $status,
+
+            "data" =>
+                $data
+        ]);
+
+
+        exit;
+    }
+}
+
+===== ./controllers/controller.reservation.php =====
+<?php
+
+require_once __DIR__ . '/../models/models.reservation.php';
+
+require_once __DIR__ . '/../services/services.reservation.php';
+
+require_once __DIR__ . '/../validators/validator.reservation.php';
+
+
+class ReservationController {
+
+    private $service;
+    private $validator;
+
+
+    public function __construct() {
+
+        $this->service =
+            new ReservationService();
+
+        $this->validator =
+            new ReservationValidator();
+    }
+
+    public function create() {
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+
+            return $this->response(
+                405,
+                "Method Not Allowed"
+            );
+        }
+
+
+        try {
+
+            $data =
+                $this->validator
+                    ->validate($_POST);
+
+            $this->validator
+                ->validatePrescription(
+                    $_FILES['medical_paper']
+                );
+
+
+            $filePath =
+                $this->savePrescription(
+                    $_FILES['medical_paper']
+                );
+
+            $reservation =
+                new Reservation();
+
+            $reservation
+                ->setPharmacyId(
+                    $data['pharmacy_id']
+                )
+
+                ->setReserverEmail(
+                    $data['reserver_email']
+                )
+
+                ->setGenericName(
+                    $data['generic_name']
+                )
+
+                ->setQuantity(
+                    $data['quantity']
+                )
+
+                ->setReservationDate(
+                    date("Y-m-d H:i:s")
+                )
+
+                ->setExpirationDate(
+                    date(
+                        "Y-m-d H:i:s",
+                        strtotime("+24 hours")
+                    )
+                )
+
+                ->setPrescription(
+                    $filePath
+                );
+
+
+            $result =
+                $this->service
+                    ->create($reservation);
+
+            if (
+                $result['status']
+                === 'error'
+            ) {
+
+                return $this->response(
+                    422,
+                    $result['message']
+                );
+            }
+
+            $this->sendEmail(
+                $reservation
+                    ->getReserverEmail(),
+
+                "Reservation Created",
+
+                "Your reservation for "
+                . $reservation->getGenericName()
+                . " was created successfully.\n"
+                . "It expires at: "
+                . $reservation->getExpirationDate()
+            );
+
+
+            return $this->response(
+                201,
+                "Reservation created successfully"
+            );
+
+        } catch (Exception $e) {
+
+            return $this->response(
+                422,
+                $e->getMessage()
+            );
+        }
+    }
+
+    public function cancel() {
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+
+            return $this->response(
+                405,
+                "Method Not Allowed"
+            );
+        }
+
+
+        $reservationId =
+            intval($_POST['id'] ?? 0);
+
+
+        if ($reservationId <= 0) {
+
+            return $this->response(
+                422,
+                "Invalid reservation id"
+            );
+        }
+
+
+        $result =
+            $this->service
+                ->cancel($reservationId);
+
+
+        if (
+            $result['status']
+            === 'error'
+        ) {
+
+            return $this->response(
+                404,
+                $result['message']
+            );
+        }
+
+        $reservation =
+            $result['data'];
+
+
+        $this->sendEmail(
+
+            $reservation[
+                'reserver_email'
+            ],
+
+            "Reservation Cancelled",
+
+            "Your reservation for "
+            . $reservation['generic_name']
+            . " has been cancelled."
+        );
+
+
+        return $this->response(
+            200,
+            "Reservation cancelled"
+        );
+    }
+
+
+    public function notifyExpiringReservations() {
+
+        $from =
+            date(
+                "Y-m-d H:i:s",
+                strtotime("+2 hours")
+            );
+
+
+        $to =
+            date(
+                "Y-m-d H:i:s",
+                strtotime("+3 hours")
+            );
+
+
+        $reservations =
+            $this->service
+                ->getExpiringSoon(
+                    $from,
+                    $to
+                );
+
+
+        foreach (
+            $reservations
+            as $reservation
+        ) {
+
+            $this->sendEmail(
+
+                $reservation[
+                    'reserver_email'
+                ],
+
+                "Reservation Expiring Soon",
+
+                "Your reservation for "
+                . $reservation[
+                    'generic_name'
+                ]
+                . " will expire in about 3 hours.\n"
+                . "Expiration time: "
+                . $reservation[
+                    'expiration_date'
+                ]
+            );
+        }
+
+
+        return $this->response(
+            200,
+            "Notifications sent"
+        );
+    }
+
+
+    private function savePrescription(
+        array $file
+    ) {
+
+        $dir =
+            __DIR__
+            . '/../uploads/prescriptions/';
+
+
+        if (!is_dir($dir)) {
+
+            mkdir(
+                $dir,
+                0777,
+                true
+            );
+        }
+
+
+        $name =
+            uniqid()
+            . "_"
+            . basename(
+                $file['name']
+            );
+
+
+        $fullPath =
+            $dir . $name;
+
+
+        move_uploaded_file(
+            $file['tmp_name'],
+            $fullPath
+        );
+
+
+        return
+            "uploads/prescriptions/"
+            . $name;
+    }
+
+    private function sendEmail(
+        $to,
+        $subject,
+        $message
+    ) {
+
+        $headers =
+            "From: no-reply@pharmacy.local\r\n"
+            . "Content-Type: text/plain; charset=UTF-8\r\n";
+
+
+        mail(
+            $to,
+            $subject,
+            $message,
+            $headers
+        );
+    }
+
+    private function response(
+        $status,
+        $data
+    ) {
+
+        http_response_code(
+            $status
+        );
+
+        header(
+            'Content-Type: application/json'
+        );
+
+
+        echo json_encode([
+
+            "status" =>
+                $status,
+
+            "data" =>
+                $data
+        ]);
+
+
+        exit;
+    }
+}
+
+===== ./models/models.pharmacyMedicine.php =====
+<?php
+
+class PharmacyMedicine {
+    private $id;
+    private $pharmacyId;
+    private $medicineId;
+    private $count;
+    private $price;
+    private $imagePath;
+
+    public function getId() {
+        return $this->id;
+    }
+
+    public function setId($id) {
+        $this->id = $id;
+        return $this;
+    }
+
+    public function getPharmacyId() {
+        return $this->pharmacyId;
+    }
+
+    public function setPharmacyId($pharmacyId) {
+        $this->pharmacyId = $pharmacyId;
+        return $this;
+    }
+
+    public function getMedicineId() {
+        return $this->medicineId;
+    }
+
+    public function setMedicineId($medicineId) {
+        $this->medicineId = $medicineId;
+        return $this;
+    }
+
+    public function getCount() {
+        return $this->count;
+    }
+
+    public function setCount($count) {
+        $this->count = $count;
+        return $this;
+    }
+
+    public function getPrice() {
+        return $this->price;
+    }
+
+    public function setPrice($price) {
+        $this->price = $price;
+        return $this;
+    }
+
+    public function getImagePath() {
+        return $this->imagePath;
+    }
+
+    public function setImagePath($imagePath) {
+        $this->imagePath = $imagePath;
+        return $this;
+    }
+}
+
+===== ./models/models.pharmacy.php =====
+<?php
+
+class Pharmacy {
+    private $id;
+    private $name;
+    private $address;
+    private $phone;
+    private $email;
+    private $passwordHash;
+    private $license;
+
+    public function getId() {
+        return $this->id;
+    }
+
+    public function setId($id) {
+        $this->id = $id;
+        return $this;
+    }
+
+    public function getName() {
+        return $this->name;
+    }
+
+    public function setName($name) {
+        $this->name = $name;
+        return $this;
+    }
+
+    public function getAddress() {
+        return $this->address;
+    }
+
+    public function setAddress($address) {
+        $this->address = $address;
+        return $this;
+    }
+
+    public function getPhone() {
+        return $this->phone;
+    }
+
+    public function setPhone($phone) {
+        $this->phone = $phone;
+        return $this;
+    }
+
+    public function getEmail() {
+        return $this->email;
+    }
+
+    public function setEmail($email) {
+        $this->email = $email;
+        return $this;
+    }
+
+    public function getPasswordHash() {
+        return $this->passwordHash;
+    }
+
+    public function setPasswordHash($passwordHash) {
+        $this->passwordHash = $passwordHash;
+        return $this;
+    }
+
+    public function getLicense() {
+        return $this->license;
+    }
+
+    public function setLicense($license) {
+        $this->license = $license;
+        return $this;
+    }
+}
+
+===== ./models/models.reservation.php =====
+<?php
+
+class Reservation {
+
+    private $id;
+    private $pharmacyId;
+    private $reserverEmail;
+    private $genericName;
+    private $quantity;
+    private $reservationDate;
+    private $expirationDate;
+    private $prescription;
+
+
+
+    public function getId() {
+        return $this->id;
+    }
+
+    public function setId($id) {
+        $this->id = $id;
+        return $this;
+    }
+
+
+
+    public function getPharmacyId() {
+        return $this->pharmacyId;
+    }
+
+    public function setPharmacyId($pharmacyId) {
+        $this->pharmacyId = $pharmacyId;
+        return $this;
+    }
+
+
+
+    public function getReserverEmail() {
+        return $this->reserverEmail;
+    }
+
+    public function setReserverEmail($reserverEmail) {
+        $this->reserverEmail = $reserverEmail;
+        return $this;
+    }
+
+
+
+    public function getGenericName() {
+        return $this->genericName;
+    }
+
+    public function setGenericName($genericName) {
+        $this->genericName = $genericName;
+        return $this;
+    }
+
+
+
+    public function getQuantity() {
+        return $this->quantity;
+    }
+
+    public function setQuantity($quantity) {
+        $this->quantity = $quantity;
+        return $this;
+    }
+
+
+
+    public function getReservationDate() {
+        return $this->reservationDate;
+    }
+
+    public function setReservationDate($reservationDate) {
+        $this->reservationDate = $reservationDate;
+        return $this;
+    }
+
+
+
+    public function getExpirationDate() {
+        return $this->expirationDate;
+    }
+
+    public function setExpirationDate($expirationDate) {
+        $this->expirationDate = $expirationDate;
+        return $this;
+    }
+
+
+
+    public function getPrescription() {
+        return $this->prescription;
+    }
+
+    public function setPrescription($prescription) {
+        $this->prescription = $prescription;
+        return $this;
+    }
+}
+
+===== ./models/models.medicines.php =====
+<?php
+
+class Medicine {
+
+    private $id;
+    private $genericName;
+    private $brandName;
+    private $manufacturer;
+
+    private $drugClass;
+    private $therapeuticClass;
+
+    private $dosageForm;
+    private $strength;
+    private $routeOfAdministration;
+
+    private $indications;
+
+    private $imageUrl;
+
+    private $createdAt;
+
+
+    public function getId() {
+        return $this->id;
+    }
+
+    public function setId($id) {
+        $this->id = $id;
+        return $this;
+    }
+
+
+    public function getGenericName() {
+        return $this->genericName;
+    }
+
+    public function setGenericName($genericName) {
+        $this->genericName = $genericName;
+        return $this;
+    }
+
+
+    public function getBrandName() {
+        return $this->brandName;
+    }
+
+    public function setBrandName($brandName) {
+        $this->brandName = $brandName;
+        return $this;
+    }
+
+
+    public function getManufacturer() {
+        return $this->manufacturer;
+    }
+
+    public function setManufacturer($manufacturer) {
+        $this->manufacturer = $manufacturer;
+        return $this;
+    }
+
+
+    public function getDrugClass() {
+        return $this->drugClass;
+    }
+
+    public function setDrugClass($drugClass) {
+        $this->drugClass = $drugClass;
+        return $this;
+    }
+
+
+    public function getTherapeuticClass() {
+        return $this->therapeuticClass;
+    }
+
+    public function setTherapeuticClass($therapeuticClass) {
+        $this->therapeuticClass = $therapeuticClass;
+        return $this;
+    }
+
+
+    public function getDosageForm() {
+        return $this->dosageForm;
+    }
+
+    public function setDosageForm($dosageForm) {
+        $this->dosageForm = $dosageForm;
+        return $this;
+    }
+
+
+    public function getStrength() {
+        return $this->strength;
+    }
+
+    public function setStrength($strength) {
+        $this->strength = $strength;
+        return $this;
+    }
+
+
+    public function getRouteOfAdministration() {
+        return $this->routeOfAdministration;
+    }
+
+    public function setRouteOfAdministration($route) {
+        $this->routeOfAdministration = $route;
+        return $this;
+    }
+
+
+    public function getIndications() {
+        return $this->indications;
+    }
+
+    public function setIndications($indications) {
+        $this->indications = $indications;
+        return $this;
+    }
+
+
+    public function getImageUrl() {
+        return $this->imageUrl;
+    }
+
+    public function setImageUrl($imageUrl) {
+        $this->imageUrl = $imageUrl;
+        return $this;
+    }
+
+
+    public function getCreatedAt() {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt($createdAt) {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+}
+
+===== ./models/models.medicine_details.php =====
+<?php
+
+class MedicineDetail {
+
+    private $id;
+    private $medicineId;
+
+    private $mechanismOfAction;
+    private $dosageAndAdministration;
+
+    private $boxedWarning;
+    private $contraindications;
+    private $warningsAndPrecautions;
+
+    private $adverseReactions;
+
+    private $drugInteractions;
+    private $foodInteractions;
+    private $alcoholWarning;
+
+    private $overdoseInformation;
+
+    private $pregnancyInfo;
+    private $breastfeedingInfo;
+    private $pediatricUse;
+    private $geriatricUse;
+
+    private $renalAdjustment;
+    private $hepaticAdjustment;
+
+    private $pharmacodynamics;
+    private $pharmacokinetics;
+
+    private $ingredients;
+    private $storageConditions;
+    private $halfLife;
+
+    private $clinicalNotes;
+
+    private $source;
+    private $lastUpdated;
+
+
+    public function getId() {
+        return $this->id;
+    }
+
+    public function setId($id) {
+        $this->id = $id;
+        return $this;
+    }
+
+
+    public function getMedicineId() {
+        return $this->medicineId;
+    }
+
+    public function setMedicineId($medicineId) {
+        $this->medicineId = $medicineId;
+        return $this;
+    }
+
+
+    public function getMechanismOfAction() {
+        return $this->mechanismOfAction;
+    }
+
+    public function setMechanismOfAction($mechanismOfAction) {
+        $this->mechanismOfAction = $mechanismOfAction;
+        return $this;
+    }
+
+
+    public function getDosageAndAdministration() {
+        return $this->dosageAndAdministration;
+    }
+
+    public function setDosageAndAdministration($dosageAndAdministration) {
+        $this->dosageAndAdministration = $dosageAndAdministration;
+        return $this;
+    }
+
+
+    public function getBoxedWarning() {
+        return $this->boxedWarning;
+    }
+
+    public function setBoxedWarning($boxedWarning) {
+        $this->boxedWarning = $boxedWarning;
+        return $this;
+    }
+
+
+    public function getContraindications() {
+        return $this->contraindications;
+    }
+
+    public function setContraindications($contraindications) {
+        $this->contraindications = $contraindications;
+        return $this;
+    }
+
+
+    public function getWarningsAndPrecautions() {
+        return $this->warningsAndPrecautions;
+    }
+
+    public function setWarningsAndPrecautions($warningsAndPrecautions) {
+        $this->warningsAndPrecautions = $warningsAndPrecautions;
+        return $this;
+    }
+
+
+    public function getAdverseReactions() {
+        return $this->adverseReactions;
+    }
+
+    public function setAdverseReactions($adverseReactions) {
+        $this->adverseReactions = $adverseReactions;
+        return $this;
+    }
+
+
+    public function getDrugInteractions() {
+        return $this->drugInteractions;
+    }
+
+    public function setDrugInteractions($drugInteractions) {
+        $this->drugInteractions = $drugInteractions;
+        return $this;
+    }
+
+
+    public function getFoodInteractions() {
+        return $this->foodInteractions;
+    }
+
+    public function setFoodInteractions($foodInteractions) {
+        $this->foodInteractions = $foodInteractions;
+        return $this;
+    }
+
+
+    public function getAlcoholWarning() {
+        return $this->alcoholWarning;
+    }
+
+    public function setAlcoholWarning($alcoholWarning) {
+        $this->alcoholWarning = $alcoholWarning;
+        return $this;
+    }
+
+
+    public function getOverdoseInformation() {
+        return $this->overdoseInformation;
+    }
+
+    public function setOverdoseInformation($overdoseInformation) {
+        $this->overdoseInformation = $overdoseInformation;
+        return $this;
+    }
+
+
+    public function getPregnancyInfo() {
+        return $this->pregnancyInfo;
+    }
+
+    public function setPregnancyInfo($pregnancyInfo) {
+        $this->pregnancyInfo = $pregnancyInfo;
+        return $this;
+    }
+
+
+    public function getBreastfeedingInfo() {
+        return $this->breastfeedingInfo;
+    }
+
+    public function setBreastfeedingInfo($breastfeedingInfo) {
+        $this->breastfeedingInfo = $breastfeedingInfo;
+        return $this;
+    }
+
+
+    public function getPediatricUse() {
+        return $this->pediatricUse;
+    }
+
+    public function setPediatricUse($pediatricUse) {
+        $this->pediatricUse = $pediatricUse;
+        return $this;
+    }
+
+
+    public function getGeriatricUse() {
+        return $this->geriatricUse;
+    }
+
+    public function setGeriatricUse($geriatricUse) {
+        $this->geriatricUse = $geriatricUse;
+        return $this;
+    }
+
+
+    public function getRenalAdjustment() {
+        return $this->renalAdjustment;
+    }
+
+    public function setRenalAdjustment($renalAdjustment) {
+        $this->renalAdjustment = $renalAdjustment;
+        return $this;
+    }
+
+
+    public function getHepaticAdjustment() {
+        return $this->hepaticAdjustment;
+    }
+
+    public function setHepaticAdjustment($hepaticAdjustment) {
+        $this->hepaticAdjustment = $hepaticAdjustment;
+        return $this;
+    }
+
+
+    public function getPharmacodynamics() {
+        return $this->pharmacodynamics;
+    }
+
+    public function setPharmacodynamics($pharmacodynamics) {
+        $this->pharmacodynamics = $pharmacodynamics;
+        return $this;
+    }
+
+
+    public function getPharmacokinetics() {
+        return $this->pharmacokinetics;
+    }
+
+    public function setPharmacokinetics($pharmacokinetics) {
+        $this->pharmacokinetics = $pharmacokinetics;
+        return $this;
+    }
+
+
+    public function getIngredients() {
+        return $this->ingredients;
+    }
+
+    public function setIngredients($ingredients) {
+        $this->ingredients = $ingredients;
+        return $this;
+    }
+
+
+    public function getStorageConditions() {
+        return $this->storageConditions;
+    }
+
+    public function setStorageConditions($storageConditions) {
+        $this->storageConditions = $storageConditions;
+        return $this;
+    }
+
+
+    public function getHalfLife() {
+        return $this->halfLife;
+    }
+
+    public function setHalfLife($halfLife) {
+        $this->halfLife = $halfLife;
+        return $this;
+    }
+
+
+    public function getClinicalNotes() {
+        return $this->clinicalNotes;
+    }
+
+    public function setClinicalNotes($clinicalNotes) {
+        $this->clinicalNotes = $clinicalNotes;
+        return $this;
+    }
+
+
+    public function getSource() {
+        return $this->source;
+    }
+
+    public function setSource($source) {
+        $this->source = $source;
+        return $this;
+    }
+
+
+    public function getLastUpdated() {
+        return $this->lastUpdated;
+    }
+
+    public function setLastUpdated($lastUpdated) {
+        $this->lastUpdated = $lastUpdated;
+        return $this;
+    }
+
+}
+
+===== ./index.php =====
+<?php
+session_start();
+error_log(session_id());
+header("Access-Control-Allow-Origin: http://localhost:5173");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+
+require_once __DIR__ . '/api/PharmacyAPI.php';
+require_once __DIR__ . '/api/MedicineAPI.php';
+
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$method = $_SERVER['REQUEST_METHOD'];
+
+$pharmacy = new PharmacyAPI();
+$medicine = new MedicineAPI();
+
+
+if ($uri === '/register' && $method === 'POST') {
+    $pharmacy->register();
+}
+
+elseif ($uri === '/login' && $method === 'POST') {
+    $pharmacy->login();
+}
+
+elseif ($uri === '/add-medicine' && $method === 'POST') {
+    /* AuthMiddleware::handle('pharmacy'); */
+    $pharmacy->addMedicine();
+}
+
+elseif ($uri === '/remove-medicine' && $method === 'POST') {
+    /* AuthMiddleware::handle('pharmacy'); */
+    $pharmacy->removeMedicine();
+}
+
+elseif ($uri === '/get-medicines' && $method === 'GET') {
+    $pharmacy->getMedicines();
+}
+
+elseif ($uri === '/get-session' && $method === 'GET') {
+    $pharmacy->getSession();
+}
+
+
+elseif ($uri === '/get-pharmacies' && $method === 'GET') {
+    $pharmacy->getPharmacies();
+}
+
+
+
+elseif ($uri === '/search-medicine' && $method === 'GET') {
+
+    $name = $_GET['name'] ?? '';
+
+    if (empty($name)) {
+        http_response_code(422);
+        echo json_encode(["status" => 422, "data" => "Missing 'name'", "name" => $name]);
+        exit;
+    }
+
+    $medicine->searchByGenericName($name);
+}
+
+elseif ($uri === '/profile' && $method === 'GET') {
+    AuthMiddleware::handle(); 
+    echo json_encode(["message" => "Profile endpoint not implemented"]);
+}
+
+else {
+    http_response_code(404);
+    echo json_encode([
+        "status" => 404,
+        "data" => "Route not found" . $uri
+    ]);
+}
+
