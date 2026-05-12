@@ -5,36 +5,36 @@ require_once __DIR__ . '/../models/models.pharmacyMedicine.php';
 
 class PharmacyService {
 
-    private $conn;
+  private $conn;
 
-    public function __construct() {
-        $this->conn = getConnection();
-    }
+  public function __construct() {
+    $this->conn = getConnection();
+  }
 
 
-    public function create($data) {
+  public function create($data) {
 
-        try {
+    try {
 
-            $stmt = $this->conn->prepare(
-                "INSERT INTO pharmacies
-                (
-                    name,
-                    address,
-                    phone,
-                    email,
-                    password_hash,
-                    license
-                )
-                VALUES
-                (
-                    :name,
-                    :address,
-                    :phone,
-                    :email,
-                    :password_hash,
-                    :license
-                )"
+      $stmt = $this->conn->prepare(
+        "INSERT INTO pharmacies
+        (
+          name,
+          address,
+          phone,
+          email,
+          password_hash,
+          license
+      )
+      VALUES
+      (
+        :name,
+        :address,
+        :phone,
+        :email,
+        :password_hash,
+        :license
+      )"
             );
 
 
@@ -92,14 +92,15 @@ class PharmacyService {
 
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
+
             if (!$result) {
                 return null;
             }
 
-            return $result;
+            return ["status"=>"ok", "data"=>$result];
 
         } catch (PDOException $e) {
-            throw $e;
+            return ["status"=>"error", "message"=>$e->message()];
         }
     }
 
@@ -124,10 +125,10 @@ class PharmacyService {
                 return null;
             }
 
-            return $result;
+            return ["status"=>"ok", "data"=>$result];
 
         } catch (PDOException $e) {
-            throw $e;
+            return ["status"=>"error", "message"=>$e->message()];
         }
     }
 
@@ -215,6 +216,51 @@ class PharmacyService {
             ];
         }
     }
+
+
+    public function updatePrice($pharmacyId, $medicineId, $newPrice) {
+
+      try {
+
+          if ($medicineId <= 0 || $newPrice < 0) {
+              return [
+                  "status" => "error",
+                  "message" => "Invalid input"
+              ];
+          }
+
+          $stmt = $this->conn->prepare(
+              "UPDATE pharmacy_medicines
+               SET price = :price
+               WHERE medicine_id = :mid AND pharmacy_id = :pid"
+          );
+
+          $stmt->execute([
+              ":price" => $newPrice,
+              ":mid" => $medicineId,
+              ":pid" => $pharmacyId,
+          ]);
+
+          if ($stmt->rowCount() === 0) {
+              return [
+                  "status" => "error",
+                  "message" => "No record updated"
+              ];
+          }
+
+          return [
+              "status" => "ok",
+              "message" => "Price updated"
+          ];
+
+      } catch (PDOException $e) {
+
+          return [
+              "status" => "error",
+              "message" => $e->getMessage()
+          ];
+      }
+  }
 
 
     public function removeMedicine(

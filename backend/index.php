@@ -29,14 +29,17 @@ if ($uri === '/register' && $method === 'POST') {
     $pharmacy->login();
 } elseif ($uri === '/add-medicine' && $method === 'POST') {
     $pharmacy->addMedicine();
-} elseif ($uri === '/remove-medicine' && $method === 'POST') {
+} elseif ($uri === '/remove-medicine' && $method === 'GET') {
     $pharmacy->removeMedicine();
 } elseif ($uri === '/get-medicines' && $method === 'GET') {
     $pharmacy->getMedicines();
 } elseif ($uri === '/get-session' && $method === 'GET') {
     $pharmacy->getSession();
 } elseif ($uri === '/get-pharmacies' && $method === 'GET') {
-    $pharmacy->getPharmacies();
+    $pharmacy->getpharmacies();
+}
+elseif ($uri === '/update-price' && $method === 'POST') {
+    $pharmacy->updatePrice();
 } elseif ($uri === '/search-medicine' && $method === 'GET') {
     $name = $_GET['name'] ?? '';
     if (empty($name)) {

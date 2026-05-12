@@ -58,7 +58,7 @@ class PharmacyValidator {
         ];
     }
 
-    public function validateUpload(array $file): void {
+    public function validateUpload($file): void {
         if (!isset($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
             throw new Exception("File upload failed");
         }

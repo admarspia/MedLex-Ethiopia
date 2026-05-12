@@ -1,3 +1,4 @@
+
 <?php
 
 require_once __DIR__ . '/../vendor/autoload.php';
@@ -115,6 +116,6 @@ function getConnection() {
         return $conn;
 
     } catch (PDOException $e) {
-        die("database error".$e->getMessage());
+        die($e->getMessage());
     }
 }

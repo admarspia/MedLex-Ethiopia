@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../models/models.medicines.php';
+require_once __DIR__ . '/../models/models.medicine.php';
 require_once __DIR__ . '/../models/models.medicineDetails.php';
 
 class MedicineService {
@@ -169,15 +169,14 @@ class MedicineService {
             $stmt = $this->conn->prepare(
                 "SELECT *
                  FROM medicines
-                 WHERE generic_name = :name"
+                 WHERE generic_name LIKE :name OR brand_name LIKE :name"
             );
 
             $stmt->execute([
-                ":name" => $name
+                ":name" => "%$name%"
             ]);
 
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
             if (!$row) {
                 return null;
             }

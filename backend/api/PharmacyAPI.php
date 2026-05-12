@@ -32,7 +32,10 @@ class PharmacyAPI {
     public function getSession() {
         $this->controller->getSession();
     }
-    
+
+    public function updatePrice(){
+      $this->controller->updatePrice();
+    } 
     public function getPharmacies() {
         $this->controller->getPharmacies();
     }

@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../services/services.pharmacy.php';
 require_once __DIR__ . '/../services/services.medicine.php';
+require_once __DIR__ . '/../models/models.pharmacyMedicine.php';
 require_once __DIR__ . '/../validators/validators.pharmacy.php';
 require_once __DIR__ . '/../validators/validator.medicine.php';
 require_once __DIR__ . '/../config/jwt_helper.php';
@@ -136,7 +137,17 @@ class PharmacyController {
             }
             
             $medicineId = $medicine->getId();
-            $result = $this->medicineService->addPharmacyMedicine($pharmacyId, $medicineId, $count, $price, $imagePath);
+
+            $pharmacyMedicine = new PharmacyMedicine();
+
+            $pharmacyMedicine->setMedicineId($medicineId);
+            $pharmacyMedicine->setPharmacyId($pharmacyId);
+            $pharmacyMedicine->setCount($count);
+            $pharmacyMedicine->setPrice($price);
+            $pharmacyMedicine->setImagePath($imagePath);
+
+            
+            $result = $this->pharmacyService->addMedicineToPharmacy($pharmacyMedicine);
             
             return $this->response(201, $result);
         } catch (Exception $e) {
@@ -144,13 +155,22 @@ class PharmacyController {
         }
     }
 
-    public function updatePrice($genericName, $newPrice) {
+    public function updatePrice() {
         if (!isset($_SESSION["pharmacy_id"])) {
             return $this->response(401, "Unauthorized");
         }
         
         $pharmacyId = $_SESSION["pharmacy_id"];
-        $result = $this->medicineService->updatePrice($pharmacyId, $genericName, $newPrice);
+
+        $medicineId = intval($_POST["medicine_id"]);
+        $newPrice = floatval($_POST["price"]);
+
+        if (!is_numeric($newPrice) || !is_numeric($medicineId)){
+            return $this->response(401, "Invalid input");
+        }
+
+
+        $result = $this->pharmacyService->updatePrice($pharmacyId, $medicineId, $newPrice);
         
         if ($result['status'] === 'error') {
             return $this->response(500, $result['message']);
@@ -165,7 +185,7 @@ class PharmacyController {
         }
         
         $pharmacyId = $_SESSION["pharmacy_id"];
-        $medicineId = $_POST['id'] ?? null;
+        $medicineId = $_GET['id'] ?? null;
         
         $result = $this->pharmacyService->removeMedicine($pharmacyId, $medicineId);
         return $this->response(200, $result);
