@@ -1,1 +1,4 @@
 .env
+target/
+uploads/
+vendor/
