@@ -3,16 +3,11 @@
 class ReservationValidator {
 
     public function validate(array $data): array {
-        $pharmacyId = intval($data['pharmacy_id'] ?? 0);
         $email = trim($data['reserver_email'] ?? '');
         $generic = trim($data['generic_name'] ?? '');
         $quantity = intval($data['quantity'] ?? 0);
         
         $errors = [];
-        
-        if ($pharmacyId <= 0) {
-            $errors[] = "Invalid pharmacy id";
-        }
         
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = "Invalid email";
@@ -31,7 +26,6 @@ class ReservationValidator {
         }
         
         return [
-            "pharmacy_id" => $pharmacyId,
             "reserver_email" => $email,
             "generic_name" => $generic,
             "quantity" => $quantity

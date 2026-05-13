@@ -22,6 +22,7 @@ class ComposerStaticInit8d84c659a4b37f5cd4c280074d026d3a
         'P' =>
         array (
             'PhpOption\\' => 10,
+            'PHPMailer\\PHPMailer\\' => 20,
         ),
         'M' =>
         array (
@@ -57,6 +58,10 @@ class ComposerStaticInit8d84c659a4b37f5cd4c280074d026d3a
         'PhpOption\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpoption/phpoption/src/PhpOption',
+        ),
+        'PHPMailer\\PHPMailer\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
         ),
         'Medlex\\Backend\\' =>
         array (

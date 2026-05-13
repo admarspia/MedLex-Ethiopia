@@ -11,18 +11,22 @@ class ReservationService {
         $this->conn = getConnection();
     }
 
-    public function create(Reservation $r) {
+    public function create(Reservation $r, $pharmacy_id) {
         try {
             $stmt = $this->conn->prepare(
                 "SELECT count FROM pharmacy_medicines
                  WHERE pharmacy_id = :p AND medicine_id = (
-                     SELECT id FROM medicines WHERE generic_name = :g
+                     SELECT id FROM medicines WHERE generic_name LIKE :g OR brand_name LIKE :b
                  )"
             );
-            
+
+            $gname = $r->getGenericName();
+            error_log($gname." ".$pharmacy_id);
+
             $stmt->execute([
-                ":p" => $r->getPharmacyId(),
-                ":g" => $r->getGenericName()
+                ":p" => $pharmacy_id,
+                ":g" => "%$gname%",
+                ":b" => "%$gname%"
             ]);
             
             $stock = $stmt->fetch(PDO::FETCH_ASSOC);
