@@ -1,27 +1,32 @@
-const API_URL = "http://localhost/backend/api";
+import { api, request } from './api';
 
-export const getReservations = async () => {
-    try {
-        const response = await fetch(`${API_URL}/Reservation.php`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching reservations:', error);
-        return [];
-    }
+export const createReservation = async (formData) => {
+  try {
+    const response = await fetch(api.createReservation, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include'
+    });
+    const data = await response.json();
+    return {
+      success: data.success || (data.status >= 200 && data.status < 300),
+      ...data
+    };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
 };
 
-export const createReservation = async (data) => {
-    try {
-        const response = await fetch(`${API_URL}/Reservation.php`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Error creating reservation:', error);
-        return { success: false };
-    }
+export const cancelReservation = async (reservationId) => {
+  return await request(api.cancelReservation, {
+    method: 'POST',
+    body: JSON.stringify({ id: reservationId })
+  });
 };
+
+export const getPharmacyReservations = async (token) => {
+  return await request(api.getReservations, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+};
+

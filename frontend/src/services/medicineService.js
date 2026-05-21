@@ -1,78 +1,50 @@
-const API_URL = "http://localhost:8000";
+import { api, request } from './api';
 
-export const getAllMedicines = async () => {
-    try {
-        const response = await fetch(`${API_URL}/medicines`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching all medicines:', error);
-        return { success: false, data: [] };
-    }
+export const searchMedicines = async (name) => {
+  const result = await request(`${api.searchMedicine}?name=${encodeURIComponent(name)}`);
+  return result;
 };
 
 export const getMedicineById = async (id) => {
-    try {
-        const response = await fetch(`${API_URL}/medicine-details?id=${id}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching medicine details:', error);
-        return { success: false, message: error.message };
-    }
-};
-
-export const searchMedicines = async (name) => {
-    try {
-        const response = await fetch(`${API_URL}/search-medicine?name=${encodeURIComponent(name)}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error searching medicines:', error);
-        return { success: false, data: [] };
-    }
+  const result = await request(api.getMedicineById(id));
+  return result;
 };
 
 export const addMedicineToStock = async (formData, token) => {
-    try {
-        const response = await fetch(`${API_URL}/add-medicine`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData // Multipart for image
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Error adding medicine:', error);
-        return { success: false, message: error.message };
-    }
+  try {
+    const response = await fetch(api.addMedicine, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData,
+      credentials: 'include'
+    });
+    const data = await response.json();
+    return {
+      success: data.success || (data.status >= 200 && data.status < 300),
+      ...data
+    };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
 };
 
 export const removeMedicineFromStock = async (medicineId, token) => {
-    try {
-        const response = await fetch(`${API_URL}/remove-medicine`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ medicine_id: medicineId })
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Error removing medicine:', error);
-        return { success: false, message: error.message };
-    }
+  return await request(api.removeMedicine, {
+    method: 'POST',
+    body: JSON.stringify({ medicine_id: medicineId })
+  });
 };
-export const updateMedicineStock = async (medicineId, count, price, token) => {
-    try {
-        const response = await fetch(`${API_URL}/update-stock`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ medicine_id: medicineId, count, price })
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Error updating medicine stock:', error);
-        return { success: false, message: error.message };
-    }
+
+export const updateMedicinePrice = async (medicineId, price, token) => {
+  return await request(api.updatePrice, {
+    method: 'POST',
+    body: JSON.stringify({ medicine_id: medicineId, price })
+  });
+};
+
+export const getPharmacyMedicines = async (pharmacyId) => {
+  const url = pharmacyId ? `${api.getMedicines}?id=${pharmacyId}` : api.getMedicines;
+  return await request(url);
 };

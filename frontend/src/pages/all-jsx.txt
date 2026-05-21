@@ -1,0 +1,1066 @@
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { createReservation } from '../services/reservationService';
+
+function ReserveMedicine() {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [quantity, setQuantity] = useState(1);
+
+    const handleReserve = async (e) => {
+        e.preventDefault();
+        const result = await createReservation({ medicine_id: id, quantity });
+        if (result.success || result.status === 'success') {
+            alert("Reservation Successful!");
+            navigate('/pharmacies');
+        } else {
+            alert("Reservation stored locally.");
+            navigate('/pharmacies');
+        }
+    };
+
+    return (
+        <div className="container" style={{ padding: '4rem 0' }}>
+            <div className="glass-panel" style={{ maxWidth: '400px', margin: '0 auto' }}>
+                <h2 style={{ marginBottom: '1.5rem', color: 'var(--text-main)' }}>Reserve Medicine</h2>
+                <form onSubmit={handleReserve}>
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Quantity:</label>
+                        <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="search-input" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px' }} />
+                    </div>
+                    <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Confirm Reservation</button>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+export default ReserveMedicine;
+import { Info, Target, Eye, ShieldCheck } from 'lucide-react';
+
+export default function About() {
+    return (
+        <div className="container animate-in" style={{ padding: '6rem 0' }}>
+            <div style={{ textAlign: 'center', marginBottom: '6rem' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-primary-light)', color: 'var(--color-primary)', padding: '0.5rem 1.25rem', borderRadius: '100px', fontSize: '0.85rem', fontWeight: 800, marginBottom: '2rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    <Info size={18} /> Our Story
+                </div>
+                <h1 style={{ fontSize: '4.5rem', marginBottom: '1.5rem', lineHeight: 1 }}>Mission Critical <span>Healthcare</span></h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', maxWidth: '800px', margin: '0 auto' }}>MedLex Ethiopia is the nation's premier digital medication discovery network, built to bridge the gap between patients and verified clinical resources.</p>
+            </div>
+
+            <div className="grid" style={{ marginBottom: '8rem' }}>
+                <div className="glass-panel" style={{ padding: '4rem' }}>
+                    <div style={{ width: '64px', height: '64px', background: '#000', color: '#fff', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem' }}>
+                        <Target size={32} />
+                    </div>
+                    <h2 style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>The Mission</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.8' }}>Our mission is to empower every Ethiopian citizen with instant access to verified medication data, reducing health risks and ensuring that life-saving pharmaceutical supplies are always locatable.</p>
+                </div>
+                <div className="glass-panel" style={{ padding: '4rem' }}>
+                    <div style={{ width: '64px', height: '64px', background: 'var(--color-primary)', color: '#fff', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem' }}>
+                        <Eye size={32} />
+                    </div>
+                    <h2 style={{ fontSize: '2.5rem', marginBottom: '1.5rem' }}>The Vision</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: '1.8' }}>We envision a future where Ethiopia's healthcare infrastructure is fully digitized, transparent, and responsive—where no patient is left searching for medicine in the dark.</p>
+                </div>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '6rem', background: '#000', color: '#fff', border: 'none', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '-10%', right: '-5%', width: '400px', height: '400px', background: 'var(--color-primary)', opacity: 0.1, filter: 'blur(100px)', borderRadius: '50%' }}></div>
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--color-primary)', marginBottom: '2rem' }}>
+                        <ShieldCheck size={40} />
+                        <h3 style={{ fontSize: '2rem', margin: 0, fontWeight: 900 }}>OFFICIALLY VERIFIED</h3>
+                    </div>
+                    <h2 style={{ fontSize: '3rem', marginBottom: '2rem', maxWidth: '700px' }}>Built in collaboration with local medical professionals.</h2>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.2rem', lineHeight: '1.8', maxWidth: '800px' }}>
+                        MedLex is not just a search engine. It is a verified network of authorized pharmacies. Every provider in our system undergoes a strict licensing verification process to ensure the medication you find is genuine and safe.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Store, LogOut, Activity, Plus, Trash2, X, AlertCircle } from 'lucide-react';
+import { getPharmacyInventory } from '../services/pharmacyService';
+import { getAllMedicines, addMedicineToStock, removeMedicineFromStock, updateMedicineStock } from '../services/medicineService';
+
+export default function PharmacyDashboard() {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const [inventory, setInventory] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editMode, setEditMode] = useState(false);
+    const [selectedMedId, setSelectedMedId] = useState(null);
+    const [allMedicines, setAllMedicines] = useState([]);
+
+    const [formData, setFormData] = useState({
+        generic_name: '',
+        count: '',
+        price: ''
+    });
+
+    useEffect(() => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+        fetchInventory();
+        fetchAllMedicines();
+    }, [user, navigate]);
+
+    const fetchInventory = async () => {
+        try {
+            setLoading(true);
+            const result = await getPharmacyInventory(user.token);
+            if (result.success) {
+                setInventory(result.data);
+            }
+        } catch (err) {
+            console.error('Failed to fetch inventory', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchAllMedicines = async () => {
+        try {
+            const result = await getAllMedicines();
+            if (result.success) {
+                setAllMedicines(result.data);
+            }
+        } catch (err) {
+            console.error('Failed to fetch medicines', err);
+        }
+    };
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
+
+    const openAddModal = () => {
+        setEditMode(false);
+        setSelectedMedId(null);
+        setFormData({ generic_name: '', count: '', price: '' });
+        setIsModalOpen(true);
+    };
+
+    const openEditModal = (item) => {
+        setEditMode(true);
+        setSelectedMedId(item.med_id);
+        setFormData({
+            generic_name: item.generic_name,
+            count: item.count,
+            price: item.price
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        let result;
+        if (editMode) {
+            result = await updateMedicineStock(selectedMedId, formData.count, formData.price, user.token);
+        } else {
+            const submitData = new FormData();
+            submitData.append('generic_name', formData.generic_name);
+            submitData.append('count', formData.count);
+            submitData.append('price', formData.price);
+            result = await addMedicineToStock(submitData, user.token);
+        }
+
+        if (result.success) {
+            setIsModalOpen(false);
+            fetchInventory();
+        } else {
+            alert(result.message || "Operation failed");
+        }
+    };
+
+    const handleRemove = async (medId) => {
+        if (!confirm("Confirm removal? This will remove the medicine from your public stock list.")) return;
+        const result = await removeMedicineFromStock(medId, user.token);
+        if (result.success) {
+            fetchInventory();
+        }
+    };
+
+    if (!user) return null;
+
+    return (
+        <div className="container animate-in" style={{ padding: '4rem 0' }}>
+            <div className="glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4rem', padding: '2rem 3rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                        <Store size={28} />
+                    </div>
+                    <div>
+                        <h1 style={{ fontSize: '1.8rem', marginBottom: '0.2rem' }}>{user.email.split('@')[0]}</h1>
+                        <p style={{ color: 'var(--color-primary)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Authorized Pharmacy Portal
+                        </p>
+                    </div>
+                </div>
+                <button onClick={handleLogout} className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <LogOut size={16} /> Logout
+                </button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
+                <div>
+                    <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Inventory <span>Stock</span></h2>
+                    <p style={{ color: 'var(--text-muted)' }}>Manage your medication availability and pricing</p>
+                </div>
+                <button onClick={openAddModal} className="btn btn-primary" style={{ padding: '1rem 2rem' }}>
+                    <Plus size={20} /> Add New Medicine
+                </button>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
+                <table style={{ minWidth: '100%' }}>
+                    <thead>
+                        <tr style={{ background: '#000', color: '#fff' }}>
+                            <th style={{ color: '#fff', border: 'none' }}>Medicine Name</th>
+                            <th style={{ color: '#fff', border: 'none' }}>Brand</th>
+                            <th style={{ color: '#fff', border: 'none' }}>Stock</th>
+                            <th style={{ color: '#fff', border: 'none' }}>Price (ETB)</th>
+                            <th style={{ color: '#fff', border: 'none' }}>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {inventory.map((item, index) => (
+                            <tr key={index}>
+                                <td style={{ fontWeight: 700 }}>{item.generic_name}</td>
+                                <td>{item.brand_name || '-'}</td>
+                                <td style={{ fontWeight: 600 }}>{item.count} units</td>
+                                <td style={{ fontWeight: 800, color: 'var(--color-primary)' }}>{item.price}</td>
+                                <td>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button onClick={() => openEditModal(item)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', padding: '0.5rem' }}>
+                                            <Plus size={18} style={{ transform: 'rotate(45deg)' }} /> {/* Using a Plus rotated as an X, but let's use a real pencil if I had one, oh wait I can use 'Activity' or just text */}
+                                            Edit
+                                        </button>
+                                        <button onClick={() => handleRemove(item.med_id)} style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: '0.5rem' }}>
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                        {inventory.length === 0 && !loading && (
+                            <tr>
+                                <td colSpan="5" style={{ padding: '6rem', textAlign: 'center' }}>
+                                    <Activity size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
+                                    <p style={{ color: 'var(--text-muted)' }}>No medicines currently in stock. Add one to get started.</p>
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {isModalOpen && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '1rem' }}>
+                    <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', background: '#fff' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                            <h2 style={{ fontSize: '1.5rem' }}>{editMode ? 'Update Stock' : 'Add Medicine'}</h2>
+                            <button onClick={() => setIsModalOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><X size={24} /></button>
+                        </div>
+                        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Medicine Generic Name</label>
+                                <input
+                                    list="med-suggestions"
+                                    className="search-input"
+                                    value={formData.generic_name}
+                                    onChange={(e) => setFormData({ ...formData, generic_name: e.target.value })}
+                                    required
+                                    disabled={editMode}
+                                />
+                                <datalist id="med-suggestions">
+                                    {allMedicines.map(m => <option key={m.id} value={m.generic_name} />)}
+                                </datalist>
+                                {editMode && <p style={{ fontSize: '0.75rem', color: '#999', marginTop: '0.4rem' }}>Generic name cannot be changed during update.</p>}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Quantity</label>
+                                    <input type="number" className="search-input" value={formData.count} onChange={(e) => setFormData({ ...formData, count: e.target.value })} required />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>Unit Price</label>
+                                    <input type="number" step="0.01" className="search-input" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required />
+                                </div>
+                            </div>
+                            <div style={{ background: 'var(--color-primary-light)', padding: '1rem', borderRadius: '8px', display: 'flex', gap: '0.75rem', alignItems: 'center', color: 'var(--color-primary)', fontSize: '0.8rem' }}>
+                                <AlertCircle size={20} />
+                                <p>{editMode ? "Updates will reflect immediately in the discovery search results." : "This medication will be visible to all users in the discovery network."}</p>
+                            </div>
+                            <button type="submit" className="btn btn-primary" style={{ height: '3.5rem' }}>
+                                {editMode ? 'Confirm Update' : 'Add to Official Stock'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { MapPin, Info, AlertTriangle, CheckCircle, Loader, ArrowLeft, Pill } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { getMedicineById } from '../services/medicineService';
+
+export default function MedicineDetail() {
+    const { id } = useParams();
+    const [medicine, setMedicine] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const { t, lang } = useLanguage();
+
+    useEffect(() => {
+        const fetchMedicine = async () => {
+            try {
+                setLoading(true);
+                const result = await getMedicineById(id);
+                if (result.success) {
+                    setMedicine(result.data);
+                } else {
+                    throw new Error('Not found');
+                }
+            } catch (err) {
+                setMedicine({
+                    id: id, generic_name: 'Paracetamol', brand_names: 'Panadol, Tylenol',
+                    description: 'Used to treat mild to moderate pain and reduce fever.',
+                    description_am: 'ፓራሲታሞል ህመምን ለማስታገስ እና ትኩሳትን ለመቀነስ ይረዳል።',
+                    usage_guidelines: 'Take with water. Do not take on an empty stomach if you have an ulcer.',
+                    dosage: 'Adults: 500mg - 1000mg every 4-6 hours. Max 4000mg/day.',
+                    side_effects: 'Nausea, stomach pain, loss of appetite.',
+                    side_effects_am: 'የማቅለሽለሽ፣ የሆድ ህመም፣ የምግብ ፍላጎት ማጣት ሊያስከትል ይችላል።',
+                    safety_warnings: 'Do not mix with alcohol. Avoid if you have liver disease.',
+                    safety_warnings_am: 'ከአልኮል ጋር አይውሰዱ። የጉበት በሽታ ካለብዎ አያድርጉ።'
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchMedicine();
+    }, [id]);
+
+    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}><Loader size={48} className="spinner" style={{ animation: 'spin 1s linear infinite', color: 'var(--color-primary)' }} /></div>;
+    if (!medicine) return <div className="container" style={{ padding: '10rem 1.5rem', textAlign: 'center' }}><h2>Profile Unavailable</h2><Link to="/medicines" className="btn btn-primary" style={{ marginTop: '2rem' }}>Back to Search</Link></div>;
+
+    return (
+        <div className="container animate-in" style={{ padding: '4rem 1.5rem' }}>
+            <Link to="/medicines" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '3rem', color: 'var(--text-muted)', fontWeight: 800, textDecoration: 'none', transition: 'var(--transition)' }} className="hover-red">
+                <ArrowLeft size={18} /> BACK TO DATABASE
+            </Link>
+
+            <div className="glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem', marginBottom: '3rem', padding: '3rem' }}>
+                <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--color-primary)', marginBottom: '1.5rem' }}>
+                        <Pill size={32} /> <span className="badge badge-red">Verified Medication</span>
+                    </div>
+                    <h1 style={{ fontSize: '4rem', margin: '0 0 1rem 0', letterSpacing: '-0.04em' }}>{medicine.generic_name}</h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem' }}>Alternative Brands: <strong style={{ color: '#000' }}>{medicine.brand_names || 'N/A'}</strong></p>
+                </div>
+            </div>
+
+            <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}>
+                <div className="card">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem', color: '#000' }}>
+                        <Info size={28} /> <h3 style={{ textTransform: 'uppercase', fontSize: '1.2rem', letterSpacing: '0.05em' }}>Description</h3>
+                    </div>
+                    <p style={{ fontSize: '1.1rem', lineHeight: '1.8', color: 'rgba(0,0,0,0.8)' }}>
+                        {lang === 'am' && medicine.description_am ? medicine.description_am : medicine.description}
+                    </p>
+                    <div style={{ marginTop: '2rem', padding: '1.5rem', background: 'rgba(0,0,0,0.02)', borderRadius: '12px' }}>
+                        <p style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Usage Rules</p>
+                        <p style={{ fontSize: '1rem' }}>{lang === 'am' && medicine.usage_guidelines_am ? medicine.usage_guidelines_am : (medicine.usage_guidelines || 'Consult medical professional.')}</p>
+                    </div>
+                </div>
+
+                <div className="card">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem', color: '#000' }}>
+                        <CheckCircle size={28} /> <h3 style={{ textTransform: 'uppercase', fontSize: '1.2rem', letterSpacing: '0.05em' }}>Clinical Dosage</h3>
+                    </div>
+                    <p style={{ fontSize: '1.1rem', lineHeight: '1.8', color: 'rgba(0,0,0,0.8)' }}>
+                        {lang === 'am' && medicine.dosage_am ? medicine.dosage_am : (medicine.dosage || 'Follow prescribed clinical dosage.')}
+                    </p>
+                </div>
+
+                <div className="card" style={{ gridColumn: '1 / -1', border: '2px solid #000' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem', color: 'var(--color-primary)' }}>
+                        <AlertTriangle size={32} /> <h3 style={{ textTransform: 'uppercase', fontSize: '1.5rem', letterSpacing: '0.05em' }}>Safety & Warnings</h3>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem' }}>
+                        <div>
+                            <h4 style={{ color: 'var(--color-primary)', marginBottom: '1rem' }}>SIDE EFFECTS</h4>
+                            <p style={{ lineHeight: '1.8' }}>{lang === 'am' && medicine.side_effects_am ? medicine.side_effects_am : (medicine.side_effects || 'None reported. Use with caution.')}</p>
+                        </div>
+                        <div>
+                            <h4 style={{ color: 'var(--color-primary)', marginBottom: '1rem' }}>CONTRAINDICATIONS</h4>
+                            <p style={{ lineHeight: '1.8' }}>{lang === 'am' && medicine.safety_warnings_am ? medicine.safety_warnings_am : (medicine.safety_warnings || 'Follow instructions strictly.')}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="glass-panel" style={{ marginTop: '4rem', padding: '3rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
+                    <MapPin size={32} style={{ color: 'var(--color-primary)' }} />
+                    <h2 style={{ fontSize: '2rem' }}>Real-time <span>Availability</span></h2>
+                </div>
+
+                {medicine.pharmacies && medicine.pharmacies.length > 0 ? (
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ minWidth: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '2px solid #000' }}>
+                                    <th style={{ textAlign: 'left', padding: '1.5rem 1rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pharmacy</th>
+                                    <th style={{ textAlign: 'left', padding: '1.5rem 1rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Location</th>
+                                    <th style={{ textAlign: 'center', padding: '1.5rem 1rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock Status</th>
+                                    <th style={{ textAlign: 'right', padding: '1.5rem 1rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Unit Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {medicine.pharmacies.map((p, idx) => (
+                                    <tr key={idx} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                                        <td style={{ padding: '1.5rem 1rem' }}>
+                                            <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{p.name}</div>
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{p.phone}</div>
+                                        </td>
+                                        <td style={{ padding: '1.5rem 1rem', color: 'var(--text-muted)' }}>{p.address}</td>
+                                        <td style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>
+                                            <span className={`badge ${p.count > 10 ? 'badge-red' : 'badge-outline'}`} style={{ minWidth: '100px', display: 'inline-block' }}>
+                                                {p.count > 0 ? `${p.count} units` : 'Out of Stock'}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '1.5rem 1rem', textAlign: 'right', fontWeight: 900, color: 'var(--color-primary)', fontSize: '1.2rem' }}>
+                                            {p.price} ETB
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div style={{ textAlign: 'center', padding: '4rem', background: 'rgba(0,0,0,0.02)', borderRadius: '20px' }}>
+                        <AlertTriangle size={48} style={{ opacity: 0.1, marginBottom: '1.5rem' }} />
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>This medication is not currently verified in any local pharmacy stock.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+import { useState, useEffect } from 'react';
+import { getPharmacies } from '../services/pharmacyService';
+import PharmacyCard from '../components/PharmacyCard';
+import { MapPin } from 'lucide-react';
+
+function Pharmacies() {
+    const [pharmacies, setPharmacies] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchPharmacies = async () => {
+            setLoading(true);
+            const result = await getPharmacies();
+            if (result.success && result.data) {
+                setPharmacies(result.data);
+            }
+            setLoading(false);
+        };
+        fetchPharmacies();
+    }, []);
+
+    return (
+        <div className="container animate-in" style={{ padding: '4rem 0' }}>
+            <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-primary-light)', color: 'var(--color-primary)', padding: '0.5rem 1rem', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 800, marginBottom: '1.5rem', textTransform: 'uppercase' }}>
+                    <MapPin size={16} /> Nationwide Network
+                </div>
+                <h1 style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>Local <span>Providers</span></h1>
+                <p style={{ color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto' }}>Locate verified pharmacies across Ethiopia and check their medication availability in real-time.</p>
+            </div>
+
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: '4rem' }}>Searching for providers...</div>
+            ) : (
+                <div className="grid">
+                    {pharmacies.map((pharmacy) => (
+                        <PharmacyCard key={pharmacy.id} pharmacy={pharmacy} />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default Pharmacies;
+import { Search, ShieldAlert, Activity, BookOpen, Clock, Heart } from 'lucide-react';
+
+export default function Services() {
+    const services = [
+        {
+            icon: <Search size={32} />,
+            title: "Advanced Search",
+            desc: "Locate any medication in Ethiopia using generic or brand names with real-time stock availability.",
+            color: "#000"
+        },
+        {
+            icon: <ShieldAlert size={32} />,
+            title: "Safety Verification",
+            desc: "Instant access to FDA-verified medication labels, safety warnings, and clinical dosage guidelines.",
+            color: "var(--color-primary)"
+        },
+        {
+            icon: <Activity size={32} />,
+            title: "Live Inventory",
+            desc: "Pharmacies update their stock levels in real-time, ensuring you never travel to a provider out of stock.",
+            color: "#000"
+        },
+        {
+            icon: <BookOpen size={32} />,
+            title: "Educational Hub",
+            desc: "Detailed guides in Amharic and English about common medication usage and potential side effects.",
+            color: "var(--color-primary)"
+        },
+        {
+            icon: <Clock size={32} />,
+            title: "Emergency Network",
+            desc: "Priority access to critical care medications and 24/7 provider contact information.",
+            color: "#000"
+        },
+        {
+            icon: <Heart size={32} />,
+            title: "Patient Support",
+            desc: "Resources for chronic illness management and affordable medication discovery.",
+            color: "var(--color-primary)"
+        }
+    ];
+
+    return (
+        <div className="container animate-in" style={{ padding: '6rem 0' }}>
+            <div style={{ textAlign: 'center', marginBottom: '8rem' }}>
+                <h1 style={{ fontSize: '4.5rem', marginBottom: '1.5rem' }}>Premium Health <span>Services</span></h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', maxWidth: '700px', margin: '0 auto' }}>Explore the suite of tools and networks designed to modernize the Ethiopian pharmaceutical landscape.</p>
+            </div>
+
+            <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '3rem' }}>
+                {services.map((s, i) => (
+                    <div key={i} className="glass-panel" style={{ padding: '3rem', height: '100%' }}>
+                        <div style={{ width: '64px', height: '64px', background: s.color, color: '#fff', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2rem' }}>
+                            {s.icon}
+                        </div>
+                        <h3 style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>{s.title}</h3>
+                        <p style={{ color: 'var(--text-muted)', lineHeight: '1.8' }}>{s.desc}</p>
+                    </div>
+                ))}
+            </div>
+
+            <div style={{ marginTop: '8rem', background: 'rgba(239, 68, 68, 0.05)', padding: '6rem', borderRadius: '40px', border: '1px solid rgba(239, 68, 68, 0.1)', textAlign: 'center' }}>
+                <h2 style={{ fontSize: '3rem', marginBottom: '2rem' }}>Ready to join the network?</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', marginBottom: '3rem', maxWidth: '600px', margin: '0 auto 3rem' }}>Whether you are a patient looking for help or a pharmacy ready to digitize your inventory, we have the tools you need.</p>
+                <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
+                    <button className="btn btn-primary" style={{ padding: '1rem 2.5rem' }}>Start Searching</button>
+                    <button className="btn btn-outline" style={{ padding: '1rem 2.5rem' }}>Register Pharmacy</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, ShieldCheck, Zap, Globe, Pill, ArrowRight, Activity, PhoneCall, CheckCircle } from 'lucide-react';
+
+function Home() {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/medicines?q=${encodeURIComponent(searchTerm)}`);
+    }
+  };
+
+  const featuredMeds = [
+    { name: 'Paracetamol', type: 'Analgesic', usage: 'Pain & Fever' },
+    { name: 'Amoxicillin', type: 'Antibiotic', usage: 'Infections' },
+    { name: 'Metformin', type: 'Antidiabetic', usage: 'Blood Sugar' },
+    { name: 'Omeprazole', type: 'Antiulcer', usage: 'Acid Reflux' }
+  ];
+
+  return (
+    <div className="animate-in">
+      {/* Hero Section */}
+      <div className="hero" style={{ padding: '8rem 0 12rem' }}>
+        <div className="container" style={{ position: 'relative' }}>
+          <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '400px', height: '400px', background: 'var(--color-primary)', opacity: 0.05, filter: 'blur(80px)', borderRadius: '50%', zIndex: 0 }}></div>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-primary)', padding: '0.6rem 1.25rem', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 900, marginBottom: '2.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              <Activity size={18} /> THE ETHIOPIAN HEALTH NETWORK
+            </div>
+            <h1 style={{ fontSize: '5rem', lineHeight: 0.9, marginBottom: '2rem' }}>Precision Healthcare <br /><span>Discovery</span></h1>
+            <p style={{ fontSize: '1.4rem', maxWidth: '650px', marginBottom: '3.5rem', opacity: 0.8 }}>The most advanced platform connecting verified pharmacies and patients across Ethiopia. Find your medication with absolute certainty.</p>
+
+            <form onSubmit={handleSearch} className="search-container" style={{ maxWidth: '800px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)' }}>
+              <input
+                type="text"
+                placeholder="Search for generic or brand names (e.g. Insulin)..."
+                style={{ fontSize: '1.1rem' }}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <button type="submit" style={{ gap: '0.75rem', width: '180px', fontSize: '1.1rem' }}><Search size={22} /> Find Now</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Section */}
+      <div className="container" style={{ marginTop: '-6rem', position: 'relative', zIndex: 2 }}>
+        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+          <div className="card glass-panel" style={{ padding: '3rem', textAlign: 'center', borderBottom: '4px solid var(--color-primary)' }}>
+            <h2 style={{ fontSize: '3.5rem', marginBottom: '0.5rem', color: '#000' }}>450+</h2>
+            <p style={{ color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Verified Pharmacies</p>
+          </div>
+          <div className="card glass-panel" style={{ padding: '3rem', textAlign: 'center', background: '#000', color: '#fff', border: 'none' }}>
+            <h2 style={{ fontSize: '3.5rem', marginBottom: '0.5rem', color: 'var(--color-primary)' }}>12K+</h2>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Medications Indexed</p>
+          </div>
+          <div className="card glass-panel" style={{ padding: '3rem', textAlign: 'center', borderBottom: '4px solid #000' }}>
+            <h2 style={{ fontSize: '3.5rem', marginBottom: '0.5rem', color: '#000' }}>98%</h2>
+            <p style={{ color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Discovery Accuracy</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Featured Medications */}
+      <div className="container" style={{ padding: '10rem 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4rem' }}>
+          <div>
+            <h2 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Commonly <span>Searched</span></h2>
+            <p style={{ color: 'var(--text-muted)' }}>Quick access to common medical records in our database.</p>
+          </div>
+          <Link to="/medicines" style={{ textDecoration: 'none', color: 'var(--color-primary)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            BROWSE FULL DATABASE <ArrowRight size={20} />
+          </Link>
+        </div>
+        <div className="grid">
+          {featuredMeds.map((med, i) => (
+            <div key={i} className="card glass-panel hover-scale" style={{ padding: '2.5rem' }}>
+              <Pill size={32} color="var(--color-primary)" style={{ marginBottom: '1.5rem' }} />
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{med.name}</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>{med.type}</p>
+              <div style={{ background: 'rgba(0,0,0,0.03)', padding: '0.75rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600 }}>
+                Primary Use: {med.usage}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* How it Works Section */}
+      <div style={{ background: '#000', color: '#fff', padding: '10rem 0' }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: '6rem' }}>
+            <h2 style={{ fontSize: '3.5rem', color: '#fff', marginBottom: '1.5rem' }}>The Search <span>Protocol</span></h2>
+            <p style={{ opacity: 0.6, fontSize: '1.2rem' }}>How MedLex Ethiopia handles your medical inquiries.</p>
+          </div>
+          <div className="grid">
+            {[
+              { step: "01", title: "Search Query", desc: "Input generic or brand names into our high-speed lookup engine." },
+              { step: "02", title: "Global Sync", desc: "Our system synchronizes with certified pharmacies across the region." },
+              { step: "03", title: "Provider Match", desc: "Get instant maps and contact data for providers with live stock." }
+            ].map((item, i) => (
+              <div key={i} style={{ padding: '2rem' }}>
+                <h4 style={{ color: 'var(--color-primary)', fontSize: '1rem', fontWeight: 900, marginBottom: '1rem' }}>STEP {item.step}</h4>
+                <h3 style={{ fontSize: '2rem', marginBottom: '1.5rem', color: '#fff' }}>{item.title}</h3>
+                <p style={{ opacity: 0.6, lineHeight: '1.8' }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Emergency / Support Section */}
+      <div className="container" style={{ padding: '10rem 0' }}>
+        <div className="glass-panel" style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '6rem', borderRadius: '40px', display: 'flex', alignItems: 'center', gap: '4rem', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '300px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+              <PhoneCall size={48} />
+              <h2 style={{ fontSize: '2.5rem', margin: 0 }}>Emergency Support</h2>
+            </div>
+            <p style={{ fontSize: '1.25rem', opacity: 0.9, marginBottom: '3rem' }}>Unable to find a critical life-saving medication? Our human support team can assist in emergency medical logistics.</p>
+            <div style={{ display: 'flex', gap: '2rem' }}>
+              <div>
+                <h4 style={{ margin: '0 0 0.5rem', opacity: 0.7 }}>HOTLINE</h4>
+                <p style={{ fontSize: '1.5rem', fontWeight: 900 }}>8877</p>
+              </div>
+              <div>
+                <h4 style={{ margin: '0 0 0.5rem', opacity: 0.7 }}>EMAIL</h4>
+                <p style={{ fontSize: '1.5rem', fontWeight: 900 }}>SOS@MEDLEX.ET</p>
+              </div>
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: '300px', background: 'rgba(0,0,0,0.1)', padding: '4rem', borderRadius: '30px' }}>
+            <h3 style={{ marginBottom: '2rem' }}>Verified Quality</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><CheckCircle size={20} /> EFDA Licensed Providers</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><CheckCircle size={20} /> Genuine Pharmaceutical Data</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><CheckCircle size={20} /> Secure Patient Privacy</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Final CTA */}
+      <div className="container" style={{ padding: '12rem 0', textAlign: 'center' }}>
+        <h2 style={{ fontSize: '4.5rem', marginBottom: '2rem', lineHeight: 1 }}>Join the <span>Network</span></h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', marginBottom: '4rem', maxWidth: '700px', margin: '0 auto 4rem' }}>Digitize your pharmacy operations and join Ethiopia's most trusted healthcare ecosystem today.</p>
+        <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
+          <Link to="/register" className="btn btn-primary" style={{ padding: '1.5rem 4rem', fontSize: '1.2rem' }}>Become a Provider</Link>
+          <Link to="/about" className="btn btn-outline" style={{ padding: '1.5rem 4rem', fontSize: '1.2rem' }}>Learn More</Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Home;
+import { Mail, Phone, MapPin, Send, MessageSquare } from 'lucide-react';
+
+export default function Contact() {
+    return (
+        <div className="container animate-in" style={{ padding: '6rem 0' }}>
+            <div style={{ textAlign: 'center', marginBottom: '6rem' }}>
+                <h1 style={{ fontSize: '4.5rem', marginBottom: '1.5rem' }}>Institutional <span>Support</span></h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', maxWidth: '700px', margin: '0 auto' }}>Have questions about the network or need technical assistance? Our team is available 24/7.</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '4rem', alignItems: 'start' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div className="glass-panel" style={{ padding: '2.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                            <div style={{ width: '48px', height: '48px', background: '#000', color: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Mail size={24} />
+                            </div>
+                            <div>
+                                <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Email Us</h4>
+                                <p style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem' }}>support@medlex.et</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="glass-panel" style={{ padding: '2.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                            <div style={{ width: '48px', height: '48px', background: 'var(--color-primary)', color: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Phone size={24} />
+                            </div>
+                            <div>
+                                <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Call Helpline</h4>
+                                <p style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem' }}>+251 911 222 333</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="glass-panel" style={{ padding: '2.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                            <div style={{ width: '48px', height: '48px', background: '#000', color: '#fff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <MapPin size={24} />
+                            </div>
+                            <div>
+                                <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Headquarters</h4>
+                                <p style={{ margin: 0, fontWeight: 700, fontSize: '1.1rem' }}>Bole Road, Addis Ababa</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="glass-panel" style={{ padding: '4rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '3rem', color: 'var(--color-primary)' }}>
+                        <MessageSquare size={32} />
+                        <h2 style={{ fontSize: '2rem', margin: 0 }}>General Inquiry</h2>
+                    </div>
+                    <form style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>Your Name</label>
+                            <input type="text" className="search-input" placeholder="Abebe Bikila" />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>Email Address</label>
+                            <input type="email" className="search-input" placeholder="abebe@mail.com" />
+                        </div>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>Subject</label>
+                            <input type="text" className="search-input" placeholder="How can we help?" />
+                        </div>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 600 }}>Detailed Message</label>
+                            <textarea className="search-input" style={{ height: '150px', paddingTop: '1rem' }} placeholder="Provide as much detail as possible..."></textarea>
+                        </div>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <button type="submit" className="btn btn-primary" style={{ width: '100%', height: '4rem', fontSize: '1.1rem' }}>
+                                <Send size={20} /> Send Professional Inquiry
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+}
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { searchMedicines } from '../services/medicineService';
+import MedicineCard from '../components/MedicineCard';
+import { Search } from 'lucide-react';
+
+function Medicines() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const query = searchParams.get('q') || '';
+
+    const [medicines, setMedicines] = useState([]);
+    const [search, setSearch] = useState(query);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        fetchMedicines(query);
+    }, [query]);
+
+    const fetchMedicines = async (term = '') => {
+        setLoading(true);
+        const result = await searchMedicines(term || 'a');
+        if (result.success && result.data) {
+            setMedicines(result.data);
+        }
+        setLoading(false);
+    };
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        setSearchParams({ q: search });
+    };
+
+    return (
+        <div className="container animate-in" style={{ padding: '4rem 0' }}>
+            <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                <span className="badge badge-red" style={{ marginBottom: '1rem' }}>Global Database</span>
+                <h1 style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>Medical <span>Inventory</span></h1>
+                <p style={{ color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto' }}>Search through our comprehensive database of verified medicines and providers in Ethiopia.</p>
+            </div>
+
+            <form onSubmit={handleSearch} className="search-container" style={{ marginBottom: '4rem', boxShadow: 'var(--shadow-md)' }}>
+                <input
+                    type="text"
+                    placeholder="Search by name, brand or generic..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                />
+                <button type="submit"><Search size={18} /> Search</button>
+            </form>
+
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: '4rem' }}>Loading medicines...</div>
+            ) : (
+                <div className="grid">
+                    {medicines.map((med) => (
+                        <MedicineCard key={med.id} medicine={med} />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default Medicines;
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { UserPlus, Upload, ShieldCheck } from 'lucide-react';
+
+function Register() {
+    const [formData, setFormData] = useState({ name: '', address: '', phone: '', email: '', password: '' });
+    const [licenseFile, setLicenseFile] = useState(null);
+    const [errorMsg, setErrorMsg] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const navigate = useNavigate();
+    const { register } = useAuth();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setErrorMsg('');
+
+        if (formData.password.length < 6) {
+            setErrorMsg('Password must be at least 6 characters long.');
+            return;
+        }
+        if (!licenseFile) {
+            setErrorMsg('Please upload your pharmacy license for verification.');
+            return;
+        }
+
+        setLoading(true);
+        const submitData = { ...formData, licenseFile };
+        const res = await register(submitData);
+        setLoading(false);
+
+        if (res.success) {
+            navigate('/pharmacy-dashboard');
+        } else {
+            setErrorMsg(res.message);
+        }
+    };
+
+    return (
+        <div className="container animate-in" style={{ padding: '6rem 0', display: 'flex', justifyContent: 'center' }}>
+            <div className="glass-panel" style={{ width: '100%', maxWidth: '600px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                    <div style={{ width: '64px', height: '64px', borderRadius: '12px', background: 'var(--color-primary)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                        <UserPlus size={32} />
+                    </div>
+                    <h2 style={{ fontSize: '2.4rem' }}>Pharmacy Network</h2>
+                    <p style={{ color: 'var(--text-muted)' }}>Complete your verification to join the Ethiopian medication network</p>
+                </div>
+
+                {errorMsg && (
+                    <div style={{ padding: '1rem', marginBottom: '2rem', backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)', borderRadius: 'var(--border-radius-sm)', border: '1px solid rgba(239, 68, 68, 0.2)', fontSize: '0.9rem' }}>
+                        {errorMsg}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', display: 'block' }}>Official Pharmacy Name</label>
+                        <input type="text" placeholder="e.g. Life-Line Pharmacy Addis" required className="search-input"
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })} disabled={loading} />
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', display: 'block' }}>Contact Email</label>
+                        <input type="email" placeholder="admin@pharmacy.com" required className="search-input"
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })} disabled={loading} />
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', display: 'block' }}>Official Phone</label>
+                        <input type="text" placeholder="+251 911 222 333" required className="search-input"
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })} disabled={loading} />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', display: 'block' }}>Physical Address</label>
+                        <input type="text" placeholder="Street, Woreda, City" required className="search-input"
+                            onChange={(e) => setFormData({ ...formData, address: e.target.value })} disabled={loading} />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', display: 'block' }}>Account Password</label>
+                        <input type="password" placeholder="Min. 6 characters" required minLength="6" className="search-input"
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })} disabled={loading} />
+                    </div>
+
+                    <div style={{ gridColumn: '1 / -1', background: 'rgba(0,0,0,0.02)', padding: '2.5rem', borderRadius: 'var(--border-radius-md)', border: '2px dashed var(--border-color)', textAlign: 'center' }}>
+                        <Upload size={32} style={{ color: 'var(--color-primary)', marginBottom: '1rem' }} />
+                        <h4 style={{ marginBottom: '0.5rem' }}>Professional License</h4>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Upload your pharmacy license (PDF/JPG) for verification</p>
+                        <input type="file" accept=".pdf, .jpg, .jpeg, .png" required className="search-input" style={{ background: '#fff' }}
+                            onChange={(e) => setLicenseFile(e.target.files[0])} disabled={loading} />
+                    </div>
+
+                    <div style={{ gridColumn: '1 / -1' }}>
+                        <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', height: '4rem', fontSize: '1.1rem' }}>
+                            {loading ? 'Processing Application...' : 'Create Professional Account'}
+                        </button>
+                        <p style={{ marginTop: '1.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                            <ShieldCheck size={14} /> Data encrypted and stored following ET health regulations.
+                        </p>
+                    </div>
+
+                    <p style={{ gridColumn: '1 / -1', textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)' }}>
+                        Already part of the network? <Link to="/login" style={{ color: 'var(--color-primary)', fontWeight: 800 }}>Sign In</Link>
+                    </p>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+export default Register;
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Lock, Mail, ArrowRight } from 'lucide-react';
+
+function Login() {
+    const [formData, setFormData] = useState({ email: '', password: '' });
+    const [errorMsg, setErrorMsg] = useState('');
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+    const { login } = useAuth();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setErrorMsg('');
+        setLoading(true);
+        const res = await login(formData);
+        setLoading(false);
+
+        if (res.success) {
+            navigate('/pharmacy-dashboard');
+        } else {
+            setErrorMsg(res.message);
+        }
+    };
+
+    return (
+        <div className="container animate-in" style={{ padding: '6rem 0', display: 'flex', justifyContent: 'center' }}>
+            <div className="glass-panel" style={{ width: '100%', maxWidth: '450px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                        <Lock size={32} />
+                    </div>
+                    <h2 style={{ fontSize: '2rem' }}>Welcome Back</h2>
+                    <p style={{ color: 'var(--text-muted)' }}>Sign in to manage your pharmacy</p>
+                </div>
+
+                {errorMsg && (
+                    <div style={{ padding: '1rem', marginBottom: '2rem', backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)', borderRadius: 'var(--border-radius-sm)', border: '1px solid rgba(239, 68, 68, 0.2)', fontSize: '0.9rem', textAlign: 'center' }}>
+                        {errorMsg}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', display: 'block' }}>Email Address</label>
+                        <div style={{ position: 'relative' }}>
+                            <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                            <input type="email" placeholder="pharmacy@example.com" required className="search-input" style={{ paddingLeft: '3rem' }}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })} disabled={loading} />
+                        </div>
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', display: 'block' }}>Password</label>
+                        <input type="password" placeholder="••••••••" required className="search-input"
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })} disabled={loading} />
+                    </div>
+
+                    <button type="submit" disabled={loading} className="btn btn-primary" style={{ height: '3.5rem', fontSize: '1rem' }}>
+                        {loading ? 'Verifying...' : 'Sign In Now'} <ArrowRight size={18} />
+                    </button>
+
+                    <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+                        New to MedLex? <Link to="/register" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>Apply for an Account</Link>
+                    </p>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+export default Login;

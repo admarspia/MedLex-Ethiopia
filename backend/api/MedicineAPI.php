@@ -17,6 +17,10 @@ class MedicineAPI {
         $this->controller->getById($id);
     }
     
+    public function getAll() {
+        $this->controller->getAll();
+    }
+    
     public function cleanup() {
         $this->controller->cleanup();
     }

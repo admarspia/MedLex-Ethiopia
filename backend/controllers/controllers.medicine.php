@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../services/services.medicine.php';
 require_once __DIR__ . '/../services/services.pharmacy.php';
-
+require_once __DIR__ . '/../helpers/logger.php';
 require_once __DIR__ . '/../models/models.medicine.php';
 require_once __DIR__ . '/../models/models.medicineDetails.php';
 
@@ -242,12 +242,12 @@ class MedicineController {
              );
       
 
-      /* $pharmacies = */
-      /*     $this->pharmacyService */
-      /*         ->getPharmaciesByMedicine( */
-      /*             $medicine */
-      /*                 ->getId() */
-      /*         ); */
+      $pharmacies =
+          $this->pharmacyService
+              ->getPharmaciesByMedicineId(
+                  $medicine
+                      ->getId()
+              );
 
       $medArray = $this->medicineToArray($medicine);
       $medDetailsArray = $this->medicineDetailsToArray($detail);
@@ -261,7 +261,7 @@ class MedicineController {
           "detail" =>
           $medDetailsArray,
           "pharmacies" =>
-          []
+          $pharmacies
         ]
       );
 
@@ -304,9 +304,6 @@ class MedicineController {
         );
       }
 
-      $md = $this->medicineToArray($medicine);
-      error_log($md);
-
 
       $detail =
         $this->medicineService
@@ -316,7 +313,7 @@ class MedicineController {
 
       $pharmacies =
         $this->pharmacyService
-             ->getPharmaciesByMedicine(
+             ->getPharmaciesByMedicineId(
                $id
              );
 
@@ -335,11 +332,21 @@ class MedicineController {
       );
 
     } catch (Exception $e) {
-
+      Helper::logger(500, $e->getMessage());
       return $this->response(
         500,
         $e->getMessage()
       );
+    }
+  }
+
+  public function getAll() {
+    try {
+      $medicines = $this->medicineService->getAllMedicines();
+      return $this->response(200, $medicines);
+    } catch (Exception $e) {
+      Helper::logger(500, $e->getMessage());
+      return $this->response(500, $e->getMessage());
     }
   }
 
@@ -356,6 +363,7 @@ class MedicineController {
       );
 
     } catch (Exception $e) {
+      Helper::logger(500, $e->getMessage());
 
       return $this->response(
         500,
@@ -464,11 +472,9 @@ class MedicineController {
     );
 
     echo json_encode([
-      "status" =>
-      $status,
-
-      "data" =>
-      $data
+      "status" => $status,
+      "success" => $status >= 200 && $status < 300,
+      "data" => $data
     ]);
 
     exit;

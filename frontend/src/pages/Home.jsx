@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ShieldCheck, Zap, Globe, Pill, ArrowRight, Activity, PhoneCall, CheckCircle } from 'lucide-react';
+import { Search, Pill, Activity, PhoneCall, CheckCircle, ArrowRight } from 'lucide-react';
 
 function Home() {
   const navigate = useNavigate();
@@ -23,66 +23,64 @@ function Home() {
   return (
     <div className="animate-in">
       {/* Hero Section */}
-      <div className="hero" style={{ padding: '8rem 0 12rem' }}>
-        <div className="container" style={{ position: 'relative' }}>
-          <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '400px', height: '400px', background: 'var(--color-primary)', opacity: 0.05, filter: 'blur(80px)', borderRadius: '50%', zIndex: 0 }}></div>
+      <div className="hero" style={{ padding: '8rem 0 12rem', background: 'linear-gradient(135deg, #fff 0%, #f5f5f5 100%)' }}>
+        <div className="container">
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-primary)', padding: '0.6rem 1.25rem', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 900, marginBottom: '2.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-primary)', padding: '0.6rem 1.25rem', borderRadius: '100px', fontSize: '0.8rem', fontWeight: 900, marginBottom: '2.5rem' }}>
               <Activity size={18} /> THE ETHIOPIAN HEALTH NETWORK
             </div>
-            <h1 style={{ fontSize: '5rem', lineHeight: 0.9, marginBottom: '2rem' }}>Precision Healthcare <br /><span>Discovery</span></h1>
-            <p style={{ fontSize: '1.4rem', maxWidth: '650px', marginBottom: '3.5rem', opacity: 0.8 }}>The most advanced platform connecting verified pharmacies and patients across Ethiopia. Find your medication with absolute certainty.</p>
+            <h1 style={{ fontSize: '4rem', lineHeight: 1.1, marginBottom: '2rem' }}>Precision Healthcare <br /><span style={{ color: 'var(--color-primary)' }}>Discovery</span></h1>
+            <p style={{ fontSize: '1.2rem', maxWidth: '600px', marginBottom: '3rem', opacity: 0.8 }}>The most advanced platform connecting verified pharmacies and patients across Ethiopia.</p>
 
-            <form onSubmit={handleSearch} className="search-container" style={{ maxWidth: '800px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)' }}>
+            <form onSubmit={handleSearch} className="search-container" style={{ maxWidth: '700px' }}>
               <input
                 type="text"
-                placeholder="Search for generic or brand names (e.g. Insulin)..."
-                style={{ fontSize: '1.1rem' }}
+                placeholder="Search for generic or brand names (e.g., Paracetamol)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <button type="submit" style={{ gap: '0.75rem', width: '180px', fontSize: '1.1rem' }}><Search size={22} /> Find Now</button>
+              <button type="submit"><Search size={20} /> Find Now</button>
             </form>
           </div>
         </div>
       </div>
 
       {/* Stats Section */}
-      <div className="container" style={{ marginTop: '-6rem', position: 'relative', zIndex: 2 }}>
-        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-          <div className="card glass-panel" style={{ padding: '3rem', textAlign: 'center', borderBottom: '4px solid var(--color-primary)' }}>
-            <h2 style={{ fontSize: '3.5rem', marginBottom: '0.5rem', color: '#000' }}>450+</h2>
-            <p style={{ color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Verified Pharmacies</p>
+      <div className="container" style={{ marginTop: '-4rem', position: 'relative', zIndex: 2 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
+          <div className="card" style={{ padding: '2rem', textAlign: 'center', background: '#fff' }}>
+            <h2 style={{ fontSize: '3rem', color: 'var(--color-primary)' }}>450+</h2>
+            <p style={{ fontWeight: 700 }}>Verified Pharmacies</p>
           </div>
-          <div className="card glass-panel" style={{ padding: '3rem', textAlign: 'center', background: '#000', color: '#fff', border: 'none' }}>
-            <h2 style={{ fontSize: '3.5rem', marginBottom: '0.5rem', color: 'var(--color-primary)' }}>12K+</h2>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Medications Indexed</p>
+          <div className="card" style={{ padding: '2rem', textAlign: 'center', background: '#000', color: '#fff' }}>
+            <h2 style={{ fontSize: '3rem', color: 'var(--color-primary)' }}>12K+</h2>
+            <p style={{ opacity: 0.7 }}>Medications Indexed</p>
           </div>
-          <div className="card glass-panel" style={{ padding: '3rem', textAlign: 'center', borderBottom: '4px solid #000' }}>
-            <h2 style={{ fontSize: '3.5rem', marginBottom: '0.5rem', color: '#000' }}>98%</h2>
-            <p style={{ color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Discovery Accuracy</p>
+          <div className="card" style={{ padding: '2rem', textAlign: 'center', background: '#fff' }}>
+            <h2 style={{ fontSize: '3rem', color: 'var(--color-primary)' }}>98%</h2>
+            <p style={{ fontWeight: 700 }}>Discovery Accuracy</p>
           </div>
         </div>
       </div>
 
       {/* Featured Medications */}
-      <div className="container" style={{ padding: '10rem 0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4rem' }}>
+      <div className="container" style={{ padding: '8rem 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Commonly <span>Searched</span></h2>
+            <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Commonly <span style={{ color: 'var(--color-primary)' }}>Searched</span></h2>
             <p style={{ color: 'var(--text-muted)' }}>Quick access to common medical records in our database.</p>
           </div>
-          <Link to="/medicines" style={{ textDecoration: 'none', color: 'var(--color-primary)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            BROWSE FULL DATABASE <ArrowRight size={20} />
+          <Link to="/medicines" style={{ color: 'var(--color-primary)', fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            BROWSE FULL DATABASE <ArrowRight size={18} />
           </Link>
         </div>
-        <div className="grid">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
           {featuredMeds.map((med, i) => (
-            <div key={i} className="card glass-panel hover-scale" style={{ padding: '2.5rem' }}>
-              <Pill size={32} color="var(--color-primary)" style={{ marginBottom: '1.5rem' }} />
-              <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{med.name}</h3>
+            <div key={i} className="card" style={{ padding: '2rem' }}>
+              <Pill size={32} color="var(--color-primary)" style={{ marginBottom: '1rem' }} />
+              <h3 style={{ fontSize: '1.3rem', marginBottom: '0.5rem' }}>{med.name}</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>{med.type}</p>
-              <div style={{ background: 'rgba(0,0,0,0.03)', padding: '0.75rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600 }}>
+              <div style={{ background: '#f5f5f5', padding: '0.75rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600 }}>
                 Primary Use: {med.usage}
               </div>
             </div>
@@ -90,67 +88,38 @@ function Home() {
         </div>
       </div>
 
-      {/* How it Works Section */}
-      <div style={{ background: '#000', color: '#fff', padding: '10rem 0' }}>
+      {/* How it Works */}
+      <div style={{ background: '#000', color: '#fff', padding: '8rem 0' }}>
         <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '6rem' }}>
-            <h2 style={{ fontSize: '3.5rem', color: '#fff', marginBottom: '1.5rem' }}>The Search <span>Protocol</span></h2>
-            <p style={{ opacity: 0.6, fontSize: '1.2rem' }}>How MedLex Ethiopia handles your medical inquiries.</p>
+          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+            <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>The Search <span style={{ color: 'var(--color-primary)' }}>Protocol</span></h2>
+            <p style={{ opacity: 0.6 }}>How MedLex Ethiopia handles your medical inquiries.</p>
           </div>
-          <div className="grid">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem' }}>
             {[
               { step: "01", title: "Search Query", desc: "Input generic or brand names into our high-speed lookup engine." },
               { step: "02", title: "Global Sync", desc: "Our system synchronizes with certified pharmacies across the region." },
-              { step: "03", title: "Provider Match", desc: "Get instant maps and contact data for providers with live stock." }
+              { step: "03", title: "Provider Match", desc: "Get instant contact data for providers with live stock." }
             ].map((item, i) => (
-              <div key={i} style={{ padding: '2rem' }}>
-                <h4 style={{ color: 'var(--color-primary)', fontSize: '1rem', fontWeight: 900, marginBottom: '1rem' }}>STEP {item.step}</h4>
-                <h3 style={{ fontSize: '2rem', marginBottom: '1.5rem', color: '#fff' }}>{item.title}</h3>
-                <p style={{ opacity: 0.6, lineHeight: '1.8' }}>{item.desc}</p>
+              <div key={i}>
+                <h4 style={{ color: 'var(--color-primary)', fontSize: '1rem', marginBottom: '1rem' }}>STEP {item.step}</h4>
+                <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>{item.title}</h3>
+                <p style={{ opacity: 0.6 }}>{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Emergency / Support Section */}
-      <div className="container" style={{ padding: '10rem 0' }}>
-        <div className="glass-panel" style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', padding: '6rem', borderRadius: '40px', display: 'flex', alignItems: 'center', gap: '4rem', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '300px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-              <PhoneCall size={48} />
-              <h2 style={{ fontSize: '2.5rem', margin: 0 }}>Emergency Support</h2>
-            </div>
-            <p style={{ fontSize: '1.25rem', opacity: 0.9, marginBottom: '3rem' }}>Unable to find a critical life-saving medication? Our human support team can assist in emergency medical logistics.</p>
-            <div style={{ display: 'flex', gap: '2rem' }}>
-              <div>
-                <h4 style={{ margin: '0 0 0.5rem', opacity: 0.7 }}>HOTLINE</h4>
-                <p style={{ fontSize: '1.5rem', fontWeight: 900 }}>8877</p>
-              </div>
-              <div>
-                <h4 style={{ margin: '0 0 0.5rem', opacity: 0.7 }}>EMAIL</h4>
-                <p style={{ fontSize: '1.5rem', fontWeight: 900 }}>SOS@MEDLEX.ET</p>
-              </div>
-            </div>
-          </div>
-          <div style={{ flex: 1, minWidth: '300px', background: 'rgba(0,0,0,0.1)', padding: '4rem', borderRadius: '30px' }}>
-            <h3 style={{ marginBottom: '2rem' }}>Verified Quality</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><CheckCircle size={20} /> EFDA Licensed Providers</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><CheckCircle size={20} /> Genuine Pharmaceutical Data</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><CheckCircle size={20} /> Secure Patient Privacy</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Final CTA */}
-      <div className="container" style={{ padding: '12rem 0', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '4.5rem', marginBottom: '2rem', lineHeight: 1 }}>Join the <span>Network</span></h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', marginBottom: '4rem', maxWidth: '700px', margin: '0 auto 4rem' }}>Digitize your pharmacy operations and join Ethiopia's most trusted healthcare ecosystem today.</p>
-        <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
-          <Link to="/register" className="btn btn-primary" style={{ padding: '1.5rem 4rem', fontSize: '1.2rem' }}>Become a Provider</Link>
-          <Link to="/about" className="btn btn-outline" style={{ padding: '1.5rem 4rem', fontSize: '1.2rem' }}>Learn More</Link>
+      {/* CTA Section */}
+      <div className="container" style={{ padding: '8rem 0', textAlign: 'center' }}>
+        <h2 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Join the <span style={{ color: 'var(--color-primary)' }}>Network</span></h2>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', maxWidth: '600px', margin: '0 auto 2rem' }}>
+          Digitize your pharmacy operations and join Ethiopia's most trusted healthcare ecosystem.
+        </p>
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link to="/register" className="btn btn-primary" style={{ padding: '1rem 2rem' }}>Become a Provider</Link>
+          <Link to="/about" className="btn btn-outline" style={{ padding: '1rem 2rem' }}>Learn More</Link>
         </div>
       </div>
     </div>

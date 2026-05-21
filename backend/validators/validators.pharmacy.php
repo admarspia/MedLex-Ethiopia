@@ -17,7 +17,7 @@ class PharmacyValidator {
             throw new Exception("Name must be 3-100 characters");
         }
         
-        if (!preg_match('/^[a-zA-Z\s]+$/', $name)) {
+        if (!preg_match('/^[\p{L}\p{N}\s\-\.\,\(\)]+$/u', $name)) {
             throw new Exception("Invalid name format");
         }
         

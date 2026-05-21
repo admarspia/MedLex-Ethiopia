@@ -20,4 +20,8 @@ class ReservationAPI {
     public function notifyExpiringReservations() {
         $this->controller->notifyExpiringReservations();
     }
+    
+    public function getReservations() {
+        $this->controller->getReservations();
+    }
 }

@@ -100,33 +100,30 @@ class MedicineService {
         $detail
             ->setId($row['id'])
             ->setMedicineId($row['medicine_id'])
-            ->setMechanismOfAction(
-                $row['mechanism_of_action']
-            )
-            ->setDosageAndAdministration(
-                $row['dosage_and_administration']
-            )
-            ->setBoxedWarning(
-                $row['boxed_warning']
-            )
-            ->setContraindications(
-                $row['contraindications']
-            )
-            ->setWarningsAndPrecautions(
-                $row['warnings_and_precautions']
-            )
-            ->setAdverseReactions(
-                $row['adverse_reactions']
-            )
-            ->setDrugInteractions(
-                $row['drug_interactions']
-            )
-            ->setSource(
-                $row['source']
-            )
-            ->setLastUpdated(
-                $row['last_updated']
-            );
+            ->setMechanismOfAction($row['mechanism_of_action'] ?? null)
+            ->setDosageAndAdministration($row['dosage_and_administration'] ?? null)
+            ->setBoxedWarning($row['boxed_warning'] ?? null)
+            ->setContraindications($row['contraindications'] ?? null)
+            ->setWarningsAndPrecautions($row['warnings_and_precautions'] ?? null)
+            ->setAdverseReactions($row['adverse_reactions'] ?? null)
+            ->setDrugInteractions($row['drug_interactions'] ?? null)
+            ->setFoodInteractions($row['food_interactions'] ?? null)
+            ->setAlcoholWarning($row['alcohol_warning'] ?? null)
+            ->setOverdoseInformation($row['overdose_information'] ?? null)
+            ->setPregnancyInfo($row['pregnancy_info'] ?? null)
+            ->setBreastfeedingInfo($row['breastfeeding_info'] ?? null)
+            ->setPediatricUse($row['pediatric_use'] ?? null)
+            ->setGeriatricUse($row['geriatric_use'] ?? null)
+            ->setRenalAdjustment($row['renal_adjustment'] ?? null)
+            ->setHepaticAdjustment($row['hepatic_adjustment'] ?? null)
+            ->setPharmacodynamics($row['pharmacodynamics'] ?? null)
+            ->setPharmacokinetics($row['pharmacokinetics'] ?? null)
+            ->setIngredients($row['ingredients'] ?? null)
+            ->setStorageConditions($row['storage_conditions'] ?? null)
+            ->setHalfLife($row['half_life'] ?? null)
+            ->setClinicalNotes($row['clinical_notes'] ?? null)
+            ->setSource($row['source'] ?? null)
+            ->setLastUpdated($row['last_updated'] ?? null);
 
         return $detail;
     }
@@ -308,6 +305,21 @@ class MedicineService {
                     warnings_and_precautions,
                     adverse_reactions,
                     drug_interactions,
+                    food_interactions,
+                    alcohol_warning,
+                    overdose_information,
+                    pregnancy_info,
+                    breastfeeding_info,
+                    pediatric_use,
+                    geriatric_use,
+                    renal_adjustment,
+                    hepatic_adjustment,
+                    pharmacodynamics,
+                    pharmacokinetics,
+                    ingredients,
+                    storage_conditions,
+                    half_life,
+                    clinical_notes,
                     source,
                     last_updated
                 )
@@ -320,6 +332,21 @@ class MedicineService {
                     :warnings,
                     :adverse,
                     :interactions,
+                    :food,
+                    :alcohol,
+                    :overdose,
+                    :pregnancy,
+                    :breastfeeding,
+                    :pediatric,
+                    :geriatric,
+                    :renal,
+                    :hepatic,
+                    :dynamics,
+                    :kinetics,
+                    :ingredients,
+                    :storage,
+                    :halflife,
+                    :notes,
                     :source,
                     :updated
                 )"
@@ -327,36 +354,31 @@ class MedicineService {
 
 
             $detailStmt->execute([
-
-                ":medicine_id" =>
-                    $detail->getMedicineId(),
-
-                ":mechanism" =>
-                    $detail->getMechanismOfAction(),
-
-                ":dosage" =>
-                    $detail->getDosageAndAdministration(),
-
-                ":boxed" =>
-                    $detail->getBoxedWarning(),
-
-                ":contra" =>
-                    $detail->getContraindications(),
-
-                ":warnings" =>
-                    $detail->getWarningsAndPrecautions(),
-
-                ":adverse" =>
-                    $detail->getAdverseReactions(),
-
-                ":interactions" =>
-                    $detail->getDrugInteractions(),
-
-                ":source" =>
-                    $detail->getSource(),
-
-                ":updated" =>
-                    $detail->getLastUpdated()
+                ":medicine_id" => $detail->getMedicineId(),
+                ":mechanism" => $detail->getMechanismOfAction(),
+                ":dosage" => $detail->getDosageAndAdministration(),
+                ":boxed" => $detail->getBoxedWarning(),
+                ":contra" => $detail->getContraindications(),
+                ":warnings" => $detail->getWarningsAndPrecautions(),
+                ":adverse" => $detail->getAdverseReactions(),
+                ":interactions" => $detail->getDrugInteractions(),
+                ":food" => $detail->getFoodInteractions(),
+                ":alcohol" => $detail->getAlcoholWarning(),
+                ":overdose" => $detail->getOverdoseInformation(),
+                ":pregnancy" => $detail->getPregnancyInfo(),
+                ":breastfeeding" => $detail->getBreastfeedingInfo(),
+                ":pediatric" => $detail->getPediatricUse(),
+                ":geriatric" => $detail->getGeriatricUse(),
+                ":renal" => $detail->getRenalAdjustment(),
+                ":hepatic" => $detail->getHepaticAdjustment(),
+                ":dynamics" => $detail->getPharmacodynamics(),
+                ":kinetics" => $detail->getPharmacokinetics(),
+                ":ingredients" => $detail->getIngredients(),
+                ":storage" => $detail->getStorageConditions(),
+                ":halflife" => $detail->getHalfLife(),
+                ":notes" => $detail->getClinicalNotes(),
+                ":source" => $detail->getSource(),
+                ":updated" => $detail->getLastUpdated()
             ]);
 
 
@@ -413,5 +435,15 @@ class MedicineService {
             ":month" => $month,
             ":threshold" => $threshold
         ]);
+    }
+
+    public function getAllMedicines() {
+        try {
+            $stmt = $this->conn->prepare("SELECT * FROM medicines ORDER BY generic_name ASC");
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw $e;
+        }
     }
 }

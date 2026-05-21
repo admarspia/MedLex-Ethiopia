@@ -87,4 +87,18 @@ class ReservationService {
         $stmt->execute([":f" => $from, ":t" => $to]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function getReservationsByPharmacy($pharmacyId) {
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT * FROM reservations 
+                 WHERE pharmacy_id = :p 
+                 ORDER BY reservation_date DESC"
+            );
+            $stmt->execute([":p" => $pharmacyId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
 }

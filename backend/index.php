@@ -2,6 +2,28 @@
 session_start();
 error_log(session_id());
 
+/*
+|--------------------------------------------------------------------------
+| CORS Headers
+|--------------------------------------------------------------------------
+| These headers allow the frontend application
+| (running on localhost:5173) to communicate with this backend API.
+|
+| Access-Control-Allow-Origin:
+|   Allows requests from the frontend URL.
+|
+| Access-Control-Allow-Credentials:
+|   Allows cookies/sessions to be sent with requests.
+|
+| Access-Control-Allow-Headers:
+|   Specifies allowed request headers.
+|
+| Access-Control-Allow-Methods:
+|   Specifies allowed HTTP methods.
+|--------------------------------------------------------------------------
+*/
+
+
 header("Access-Control-Allow-Origin: http://localhost:5173");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -11,6 +33,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
+
+/*
+|--------------------------------------------------------------------------
+| Include API Classes
+|--------------------------------------------------------------------------
+| These files contain the business logic for:
+| - Pharmacy operations
+| - Medicine operations
+| - Reservation operations
+|--------------------------------------------------------------------------
+*/
+
 
 require_once __DIR__ . '/api/PharmacyAPI.php';
 require_once __DIR__ . '/api/MedicineAPI.php';
@@ -22,6 +56,16 @@ $method = $_SERVER['REQUEST_METHOD'];
 $pharmacy = new PharmacyAPI();
 $medicine = new MedicineAPI();
 $reservation = new ReservationAPI();
+
+/*
+|--------------------------------------------------------------------------
+| Routing System
+|--------------------------------------------------------------------------
+| This section checks the requested route and method,
+| then calls the appropriate API function.
+|--------------------------------------------------------------------------
+*/
+
 
 if ($uri === '/register' && $method === 'POST') {
     $pharmacy->register();
@@ -48,6 +92,9 @@ elseif ($uri === '/update-price' && $method === 'POST') {
         exit;
     }
     $medicine->searchByGenericName($name);
+} elseif ($uri === '/medicine' && $method === 'GET'){
+    $medicine->getById($_GET['id']);
+
 } elseif ($uri === '/reservation/create' && $method === 'POST') {
     $reservation->create();
 } elseif ($uri === '/reservation/cancel' && $method === 'POST') {

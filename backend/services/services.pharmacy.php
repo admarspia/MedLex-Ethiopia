@@ -100,7 +100,7 @@ class PharmacyService {
             return ["status"=>"ok", "data"=>$result];
 
         } catch (PDOException $e) {
-            return ["status"=>"error", "message"=>$e->message()];
+            return ["status"=>"error", "message"=>$e->getMessage()];
         }
     }
 
@@ -128,7 +128,7 @@ class PharmacyService {
             return ["status"=>"ok", "data"=>$result];
 
         } catch (PDOException $e) {
-            return ["status"=>"error", "message"=>$e->message()];
+            return ["status"=>"error", "message"=>$e->getMessage()];
         }
     }
 
@@ -218,7 +218,7 @@ class PharmacyService {
     }
 
 
-    public function updatePrice($pharmacyId, $medicineId, $newPrice) {
+    public function updatePrice($pharmacyId, $medicineId, $newPrice, $newCount = null) {
 
       try {
 
@@ -229,17 +229,30 @@ class PharmacyService {
               ];
           }
 
-          $stmt = $this->conn->prepare(
-              "UPDATE pharmacy_medicines
-               SET price = :price
-               WHERE medicine_id = :mid AND pharmacy_id = :pid"
-          );
-
-          $stmt->execute([
-              ":price" => $newPrice,
-              ":mid" => $medicineId,
-              ":pid" => $pharmacyId,
-          ]);
+          if ($newCount !== null) {
+              $stmt = $this->conn->prepare(
+                  "UPDATE pharmacy_medicines
+                   SET price = :price, count = :count
+                   WHERE medicine_id = :mid AND pharmacy_id = :pid"
+              );
+              $stmt->execute([
+                  ":price" => $newPrice,
+                  ":count" => $newCount,
+                  ":mid" => $medicineId,
+                  ":pid" => $pharmacyId,
+              ]);
+          } else {
+              $stmt = $this->conn->prepare(
+                  "UPDATE pharmacy_medicines
+                   SET price = :price
+                   WHERE medicine_id = :mid AND pharmacy_id = :pid"
+              );
+              $stmt->execute([
+                  ":price" => $newPrice,
+                  ":mid" => $medicineId,
+                  ":pid" => $pharmacyId,
+              ]);
+          }
 
           if ($stmt->rowCount() === 0) {
               return [
@@ -250,7 +263,7 @@ class PharmacyService {
 
           return [
               "status" => "ok",
-              "message" => "Price updated"
+              "message" => "Stock updated"
           ];
 
       } catch (PDOException $e) {
@@ -283,18 +296,60 @@ class PharmacyService {
 
 
             return [
-                "status" => "ok",
-                "message" => "Removed"
+              "status" => "ok",
+              "message" => "Removed"
             ];
 
         } catch (PDOException $e) {
 
-            return [
-                "status" => "error",
-                "message" => $e->getMessage()
-            ];
+          return [
+            "status" => "error",
+            "message" => $e->getMessage()
+          ];
         }
     }
+
+
+    public function getPharmaciesByMedicineId($medicine_id) {
+      try {
+
+        if (!$medicine_id){
+          return [
+            "status" => "error",
+            "message" => "medicine_id is null"
+          ];
+        }else {
+          error_log($medicine_id);
+        }
+        $stmt = $this->conn->prepare(
+            "SELECT 
+                p.id,
+                p.name,
+                p.email,
+                p.address
+            FROM pharmacies p
+            JOIN pharmacy_medicines pm 
+                ON p.id = pm.pharmacy_id
+            WHERE pm.medicine_id = :id"
+        );
+
+        $stmt->execute([
+            ":id" => $medicine_id
+        ]);
+
+        return [
+            "status" => "ok",
+            "data" => $stmt->fetchAll(PDO::FETCH_ASSOC)
+        ];
+
+    } catch (PDOException $e) {
+
+        return [
+            "status" => "error",
+            "message" => "Error: " . $e->getMessage()
+        ];
+    }
+}
 
     public function getPharmacies() {
 

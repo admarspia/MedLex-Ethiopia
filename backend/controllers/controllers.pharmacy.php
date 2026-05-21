@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/models.pharmacyMedicine.php';
 require_once __DIR__ . '/../validators/validators.pharmacy.php';
 require_once __DIR__ . '/../validators/validator.medicine.php';
 require_once __DIR__ . '/../config/jwt_helper.php';
+require_once __DIR__ . '/../helpers/logger.php';
 
 class PharmacyController {
 
@@ -57,8 +58,13 @@ class PharmacyController {
             $_SESSION["pharmacy_id"] = $result['id'];
             $token = generateJWT(["sub" => $data['email'], "id" => $result['id']]);
             
+            
+            Helper::logger(201, "Registration successful");
+            
             return $this->response(201, ["message" => "Registration successful", "token" => $token]);
+
         } catch (Exception $e) {
+            Helper::logger(422, $e.getMessage());
             return $this->response(422, $e->getMessage());
         }
     }
@@ -97,10 +103,12 @@ class PharmacyController {
             
             $_SESSION["pharmacy_id"] = $user['id'];
             $token = generateJWT(["sub" => $email, "id" => $user['id']]);
-            
+            Helper::logger(200, "Login successful");
+
             return $this->response(200, ["message" => "Login successful", "token" => $token]);
         } catch (Exception $e) {
-            return $this->response(400, $e->getMessage());
+            Helper::logger(422, $e.getMessage());
+          return $this->response(400, $e->getMessage());
         }
     }
 
@@ -127,7 +135,7 @@ class PharmacyController {
                 throw new Exception("Invalid price");
             }
             
-            $this->medicineValidator->validatePrescription($_FILES['image']);
+            $this->medicineValidator->validateImage($_FILES['image']);
             $imagePath = $this->saveFile($_FILES['image'], "medicines");
             
             $medicine = $this->medicineService->getMedicineByGenericName($genericName);
@@ -151,6 +159,7 @@ class PharmacyController {
             
             return $this->response(201, $result);
         } catch (Exception $e) {
+          Helper::logger(422, $e.getMessage());
             return $this->response(422, $e->getMessage());
         }
     }
@@ -162,15 +171,19 @@ class PharmacyController {
         
         $pharmacyId = $_SESSION["pharmacy_id"];
 
-        $medicineId = intval($_POST["medicine_id"]);
-        $newPrice = floatval($_POST["price"]);
+        // Decode JSON body or fallback to POST variables
+        $raw = file_get_contents("php://input");
+        $jsonData = json_decode($raw, true);
 
-        if (!is_numeric($newPrice) || !is_numeric($medicineId)){
-            return $this->response(401, "Invalid input");
+        $medicineId = intval($jsonData['medicine_id'] ?? $_POST['medicine_id'] ?? 0);
+        $newPrice = floatval($jsonData['price'] ?? $_POST['price'] ?? -1);
+        $newCount = isset($jsonData['count']) ? intval($jsonData['count']) : (isset($_POST['count']) ? intval($_POST['count']) : null);
+
+        if ($medicineId <= 0 || $newPrice < 0) {
+            return $this->response(400, "Invalid input. Price and valid medicine_id are required.");
         }
 
-
-        $result = $this->pharmacyService->updatePrice($pharmacyId, $medicineId, $newPrice);
+        $result = $this->pharmacyService->updatePrice($pharmacyId, $medicineId, $newPrice, $newCount);
         
         if ($result['status'] === 'error') {
             return $this->response(500, $result['message']);
@@ -185,7 +198,16 @@ class PharmacyController {
         }
         
         $pharmacyId = $_SESSION["pharmacy_id"];
-        $medicineId = $_GET['id'] ?? null;
+        
+        // Support POST, GET, or raw JSON body
+        $raw = file_get_contents("php://input");
+        $jsonData = json_decode($raw, true);
+        
+        $medicineId = $jsonData['medicine_id'] ?? $_POST['medicine_id'] ?? $_GET['id'] ?? null;
+        
+        if (!$medicineId) {
+            return $this->response(400, "Medicine ID required");
+        }
         
         $result = $this->pharmacyService->removeMedicine($pharmacyId, $medicineId);
         return $this->response(200, $result);
@@ -197,7 +219,7 @@ class PharmacyController {
     }
 
     public function getMedicines() {
-        $pharmacyId = $_GET['id'] ?? null;
+        $pharmacyId = $_GET['id'] ?? $_SESSION['pharmacy_id'] ?? null;
         
         if (!$pharmacyId) {
             return $this->response(400, "Pharmacy ID required");
@@ -235,7 +257,11 @@ class PharmacyController {
     private function response($status, $data) {
         http_response_code($status);
         header('Content-Type: application/json');
-        echo json_encode(["status" => $status, "data" => $data]);
+        echo json_encode([
+            "status" => $status,
+            "success" => $status >= 200 && $status < 300,
+            "data" => $data
+        ]);
         exit;
     }
 }

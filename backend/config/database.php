@@ -29,6 +29,23 @@ function getConnection() {
     ");
 
     $conn->exec("
+            CREATE TABLE IF NOT EXISTS medicines (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                generic_name TEXT NOT NULL UNIQUE,
+                brand_name TEXT,
+                manufacturer TEXT,
+                drug_class TEXT,
+                therapeutic_class TEXT,
+                dosage_form TEXT,
+                strength TEXT,
+                route_of_administration TEXT,
+                indications TEXT,
+                image_url TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+        ");
+
+    $conn->exec("
     CREATE TABLE IF NOT EXISTS medicine_details (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         medicine_id INTEGER NOT NULL UNIQUE,
@@ -59,23 +76,6 @@ function getConnection() {
         FOREIGN KEY (medicine_id) REFERENCES medicines(id)
     );
 ");
-
-    $conn->exec("
-            CREATE TABLE IF NOT EXISTS medicines (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                generic_name TEXT NOT NULL UNIQUE,
-                brand_name TEXT,
-                manufacturer TEXT,
-                drug_class TEXT,
-                therapeutic_class TEXT,
-                dosage_form TEXT,
-                strength TEXT,
-                route_of_administration TEXT,
-                indications TEXT,
-                image_url TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            );
-        ");
 
     $conn->exec("
                 CREATE TABLE IF NOT EXISTS pharmacy_medicines (

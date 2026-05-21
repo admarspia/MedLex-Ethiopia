@@ -1,0 +1,95 @@
+<?php
+
+require_once __DIR__ . '/../controllers/controllers.medicine.php';
+
+class MedicineAPI {
+    private $controller;
+    
+    public function __construct() {
+        $this->controller = new MedicineController();
+    }
+    
+    public function searchByGenericName($name) {
+        $this->controller->searchByGenericName($name);
+    }
+    
+    public function getById($id) {
+        $this->controller->getById($id);
+    }
+    
+    public function getAll() {
+        $this->controller->getAll();
+    }
+    
+    public function cleanup() {
+        $this->controller->cleanup();
+    }
+}<?php
+
+require_once __DIR__ . '/../controllers/controllers.reservation.php';
+
+class ReservationAPI {
+    private $controller;
+    
+    public function __construct() {
+        $this->controller = new ReservationController();
+    }
+    
+    public function create() {
+        $this->controller->create();
+    }
+    
+    public function cancel() {
+        $this->controller->cancel();
+    }
+    
+    public function notifyExpiringReservations() {
+        $this->controller->notifyExpiringReservations();
+    }
+    
+    public function getReservations() {
+        $this->controller->getReservations();
+    }
+}
+<?php
+
+require_once __DIR__ . '/../controllers/controllers.pharmacy.php';
+
+class PharmacyAPI {
+    private $controller;
+    
+    public function __construct() {
+        $this->controller = new PharmacyController();
+    }
+    
+    public function register() {
+        $this->controller->register();
+    }
+    
+    public function login() {
+        $this->controller->login();
+    }
+    
+    public function addMedicine() {
+        $this->controller->addMedicine();
+    }
+    
+    public function removeMedicine() {
+        $this->controller->removeMedicine();
+    }
+    
+    public function getMedicines() {
+        $this->controller->getMedicines();
+    }
+    
+    public function getSession() {
+        $this->controller->getSession();
+    }
+
+    public function updatePrice(){
+      $this->controller->updatePrice();
+    } 
+    public function getPharmacies() {
+        $this->controller->getPharmacies();
+    }
+}
