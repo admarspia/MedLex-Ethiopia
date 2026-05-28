@@ -305,6 +305,8 @@ class MedicineController {
       }
 
 
+
+
       $detail =
         $this->medicineService
              ->getMedicineDetail(

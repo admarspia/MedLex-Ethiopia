@@ -326,7 +326,9 @@ class PharmacyService {
                 p.id,
                 p.name,
                 p.email,
-                p.address
+                p.address,
+                pm.count,
+                pm.price
             FROM pharmacies p
             JOIN pharmacy_medicines pm 
                 ON p.id = pm.pharmacy_id

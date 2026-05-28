@@ -13,6 +13,7 @@ import Register from './pages/Register';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Services from './pages/Services';
+import ReserveMedicine from './pages/ReserveMedicine';
 
 // Components
 import Navbar from './components/Navbar';
@@ -30,6 +31,7 @@ function App() {
       <AuthProvider>
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           <Navbar />
+          
           <main style={{ flex: 1 }}>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -41,16 +43,23 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/services" element={<Services />} />
+
               <Route 
-                path="/pharmacy-dashboard" 
+                path="/reserve/:id" 
+                element={<ReserveMedicine />} 
+              />
+
+              <Route 
+                path="/pharmacy-dashboard"
                 element={
                   <ProtectedRoute>
                     <PharmacyDashboard />
                   </ProtectedRoute>
-                } 
+                }
               />
             </Routes>
           </main>
+
           <Footer />
         </div>
       </AuthProvider>

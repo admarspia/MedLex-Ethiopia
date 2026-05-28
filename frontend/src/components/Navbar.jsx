@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Activity, User, LogIn, Menu } from 'lucide-react';
+import { Activity, User, LogIn, Calendar, Package } from 'lucide-react';
 
 function Navbar() {
   const { user, logout } = useAuth();
@@ -13,19 +13,24 @@ function Navbar() {
           MEDLEX <span style={{ color: 'var(--text-main)' }}>ETHIOPIA</span>
         </Link>
 
-        <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
           <Link to="/medicines" className="nav-link">MEDICINES</Link>
           <Link to="/pharmacies" className="nav-link">PHARMACIES</Link>
+
           <Link to="/services" className="nav-link">SERVICES</Link>
           <Link to="/about" className="nav-link">ABOUT</Link>
           <Link to="/contact" className="nav-link">CONTACT</Link>
-          <div style={{ height: '20px', width: '1px', background: 'rgba(0,0,0,0.1)' }}></div>
+          
+          <div style={{ height: '30px', width: '1px', background: 'rgba(0,0,0,0.1)' }}></div>
+          
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <Link to="/pharmacy-dashboard" className="btn btn-primary" style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}>
-                <User size={16} /> PORTAL
+                <Package size={16} /> DASHBOARD
               </Link>
-              <button onClick={logout} className="btn-outline" style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>LOGOUT</button>
+              <button onClick={logout} className="btn-outline" style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
+                LOGOUT
+              </button>
             </div>
           ) : (
             <Link to="/login" className="btn btn-primary" style={{ padding: '0.6rem 1.2rem', fontSize: '0.85rem' }}>

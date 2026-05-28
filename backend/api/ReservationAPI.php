@@ -17,11 +17,19 @@ class ReservationAPI {
         $this->controller->cancel();
     }
     
-    public function notifyExpiringReservations() {
+    public function getReservations() {
+        $this->controller->getReservations();
+    }
+    
+    public function getUserReservations() {
+        $this->controller->getUserReservations();
+    }
+    
+    public function notifyExpiring() {
         $this->controller->notifyExpiringReservations();
     }
     
-    public function getReservations() {
-        $this->controller->getReservations();
+    public function autoCancel() {
+        $this->controller->autoCancelExpired();
     }
 }
